@@ -12,8 +12,9 @@ import (
 
 	containerregistry "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/afero"
-	"github.com/spf13/afero/tarfs"
+	"josephlewis.net/osshit/third_party/cowfs"
 	"josephlewis.net/osshit/third_party/realpath"
+	"josephlewis.net/osshit/third_party/tarfs"
 )
 
 // WhiteoutPrefix prefix means file is a whiteout.
@@ -66,16 +67,14 @@ func WalkImgFs(layers []containerregistry.Layer, w io.Writer) error {
 
 func NewCopyOnWriteFs(tarReader *tar.Reader) VFS {
 	base := tarfs.New(tarReader)
-	roBase := NewLoggingFs(afero.NewReadOnlyFs(base), "tar-ro")
-	lfsRoBase := NewLoggingFs(NewLinkingFs(roBase), "ln-tar-ro")
+	roBase := afero.NewReadOnlyFs(base)
 
-	memFs := NewLoggingFs(afero.NewMemMapFs(), "mem")
-	lfsMemfs := NewLoggingFs(&LinkingFsWrapper{memFs}, "ln-mem")
+	memFs := afero.NewMemMapFs()
+	lfsMemfs := &LinkingFsWrapper{memFs}
 
-	ufs := afero.NewCopyOnWriteFs(lfsRoBase, lfsMemfs)
+	ufs := cowfs.NewCopyOnWriteFs(roBase, lfsMemfs)
 
-	NewLoggingFs(ufs, "union")
-	return lfsRoBase
+	return NewLoggingFs(ufs, "union")
 }
 
 func NewLoggingFs(base VFS, fsName string) VFS {
@@ -132,19 +131,11 @@ func NewLinkingFs(base VFS) VFS {
 var _ afero.Symlinker = (*LinkingFsWrapper)(nil)
 
 func (lfs *LinkingFsWrapper) LstatIfPossible(name string) (os.FileInfo, bool, error) {
-	// if lstater, ok := lfs.VFS.(afero.Lstater); ok {
-	// 	return lstater.LstatIfPossible(name)
-	// }
-
 	fi, err := lfs.VFS.Stat(name)
 	return fi, true, err
 }
 
 func (lfs *LinkingFsWrapper) ReadlinkIfPossible(name string) (string, error) {
-	// if linker, ok := lfs.VFS.(afero.LinkReader); ok {
-	// 	return linker.ReadlinkIfPossible(name)
-	// }
-
 	fi, _, err := lfs.LstatIfPossible(name)
 	if err != nil {
 		return "", err
@@ -159,9 +150,5 @@ func (lfs *LinkingFsWrapper) ReadlinkIfPossible(name string) (string, error) {
 }
 
 func (lfs *LinkingFsWrapper) SymlinkIfPossible(oldname, newname string) error {
-	// if linker, ok := lfs.VFS.(afero.Linker); ok {
-	// 	return linker.SymlinkIfPossible(oldname, newname)
-	// }
-
 	return afero.WriteFile(lfs.VFS, newname, ([]byte)(oldname), 0666|os.ModeSymlink)
 }

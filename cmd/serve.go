@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"text/tabwriter"
 
 	"github.com/gliderlabs/ssh"
@@ -47,9 +49,9 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the honeypot on a local port.",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("serve called")
-
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		log.Println("Initializing server...")
 		server := &ssh.Server{
 			Addr: fmt.Sprintf(":%d", config.SSHPort),
 			Handler: func(s ssh.Session) {
@@ -92,10 +94,45 @@ var serveCmd = &cobra.Command{
 		}
 
 		if config.HostKeyPath != "" {
+			log.Printf("- Using host key: %q\n", config.HostKeyPath)
 			server.SetOption(ssh.HostKeyFile(config.HostKeyPath))
 		}
 
-		log.Fatal(server.ListenAndServe())
+		sigs := make(chan os.Signal, 1)
+		done := make(chan bool, 1)
+		serverErr := make(chan error, 1)
+
+		go func() {
+			log.Printf("- Starting SSH server on %s\n", server.Addr)
+			serverErr <- server.ListenAndServe()
+		}()
+
+		log.Println("- Starting interrupt handler")
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+		go func() {
+			for {
+				sig := <-sigs
+				switch sig {
+				case syscall.SIGINT:
+					// TODO send out a maintenance signal.
+					fallthrough
+				case syscall.SIGTERM, syscall.SIGKILL:
+					log.Printf("Got signal %q, terminating...", sig)
+					done <- true
+					return
+				}
+			}
+		}()
+
+		select {
+		case err := <-serverErr:
+			// Failure
+			return fmt.Errorf("server failure: %v", err)
+
+		case <-done:
+			// graceful termination
+			return nil
+		}
 	},
 }
 
@@ -105,5 +142,4 @@ func init() {
 	serveCmd.Flags().StringVar(&config.HostKeyPath, "host-key", "", "Key for the server, random if unspecified.")
 	serveCmd.Flags().IntVar(&config.SSHPort, "port", 2222, "Port to open the honeypot on.")
 	serveCmd.Flags().StringVar(&config.RootFsTarPath, "root-fs", "", "Tar file to use as the root filesystem, empty if unspecified.")
-
 }

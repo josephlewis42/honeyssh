@@ -8,6 +8,7 @@ package realpath
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 )
@@ -86,6 +87,7 @@ func Realpath(os OS, fpath string) (string, error) {
 				if err != nil {
 					return "", err
 				}
+				fmt.Printf("Readlink(%q) -> %q\n", string(c), link)
 				after := string(path[len(c):])
 
 				// switch symlink component with its real path
