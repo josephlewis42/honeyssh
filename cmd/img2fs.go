@@ -17,15 +17,21 @@ limitations under the License.
 package cmd
 
 import (
+	"archive/tar"
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	containerregistry "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/core"
 )
+
+// WhiteoutPrefix prefix means file is a whiteout.
+const WhiteoutPrefix = ".wh."
 
 // img2fs converts a Docker image to a filesystem
 var img2fs = &cobra.Command{
@@ -92,7 +98,7 @@ Prepare an image by running the following:
 		}
 		defer out.Close()
 
-		return core.WalkImgFs(layers, out)
+		return walkImgFs(layers, out)
 	},
 }
 
@@ -105,6 +111,48 @@ func positionalArgs(args, defaults []string) (defaulted []string) {
 		}
 	}
 	return
+}
+
+func walkImgFs(layers []containerregistry.Layer, w io.Writer) error {
+	whiteouts := make(map[string]bool)
+
+	tw := tar.NewWriter(w)
+	defer tw.Close()
+
+	for layerIdx, layer := range layers {
+		ul, err := layer.Uncompressed()
+		if err != nil {
+			return fmt.Errorf("couldn't decompress layer[%d]: %v", layerIdx, err)
+		}
+		defer ul.Close()
+
+		tarReader := tar.NewReader(ul)
+		for {
+			hdr, err := tarReader.Next()
+			if err == io.EOF {
+				break // End of archive
+			}
+			if err != nil {
+				return fmt.Errorf("couldn't read next file in layer[%d]: %v", layerIdx, err)
+			}
+
+			if strings.HasPrefix(path.Base(hdr.FileInfo().Name()), WhiteoutPrefix) {
+				whiteouts[hdr.Name] = true
+			}
+
+			if err := tw.WriteHeader(hdr); err != nil {
+				return err
+			}
+
+			if hdr.FileInfo().Size() > 0 {
+				if _, err := io.Copy(tw, tarReader); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func init() {

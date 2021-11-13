@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -17,7 +16,9 @@ import (
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
-	"github.com/spf13/afero"
+	"josephlewis.net/osshit/commands"
+	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/osshit/third_party/tarfs"
 )
 
 const (
@@ -37,11 +38,9 @@ var (
 )
 
 type Shell struct {
-	VirtualOS         VOS
-	Readline          *readline.Instance
-	InteractionWriter io.WriteCloser
-
-	toClose []io.Closer
+	VirtualOS vos.VOS
+	Readline  *readline.Instance
+	toClose   listCloser
 }
 
 func NewShell(s ssh.Session, configuration *Configuration) (*Shell, error) {
@@ -59,16 +58,10 @@ func NewShell(s ssh.Session, configuration *Configuration) (*Shell, error) {
 		}
 	})()
 
-	virtualOS := NewMemOs(s)
-
-	os.MkdirAll(filepath.Join(".", "logs"), 0700)
-	logName := filepath.Join(".", "logs", fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339)))
-	logFd, err := os.Create(logName)
+	virtualOS, toClose, err := newFakeOs(s, configuration)
 	if err != nil {
 		return nil, err
 	}
-
-	virtualOS.VIO = Record(virtualOS, logFd)
 
 	cfg := &readline.Config{
 		Stdin:  readline.NewCancelableStdin(virtualOS.Stdin()),
@@ -93,21 +86,10 @@ func NewShell(s ssh.Session, configuration *Configuration) (*Shell, error) {
 	}
 
 	shell := &Shell{
-		VirtualOS:         virtualOS,
-		Readline:          readline,
-		InteractionWriter: logFd,
+		VirtualOS: virtualOS,
+		Readline:  readline,
 	}
-
-	if configuration.RootFsTarPath != "" {
-		fd, err := os.Open(configuration.RootFsTarPath)
-		if err != nil {
-			return nil, err
-		}
-
-		virtualOS.VFS = NewCopyOnWriteFs(tar.NewReader(fd))
-		virtualOS.VFS = NewSymlinkResolvingRelativeFs(virtualOS.VFS, virtualOS.Getwd)
-		shell.toClose = append(shell.toClose, fd)
-	}
+	shell.toClose = append(shell.toClose, toClose)
 
 	shell.Init(s.User())
 
@@ -215,24 +197,42 @@ func (s *Shell) Run() {
 				continue
 			}
 
-			execPath, err := LookPath(s.VirtualOS, tokens[0])
+			execPath, err := vos.LookPath(s.VirtualOS, tokens[0])
 			switch {
-			case err == ErrNotFound:
+			case err == vos.ErrNotFound:
 				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
 				continue
 			case err == fs.ErrPermission || err != nil:
 				fmt.Fprintf(s.Readline, "%s: permission denied\n", tokens[0])
 				continue
 			}
-			fmt.Fprintln(s.Readline, "Executing", execPath)
 
-			fmt.Fprintln(s.Readline, strings.Join(tokens, " | "))
+			if honeypotCommand, ok := commands.AllCommands[execPath]; ok {
+				// TODO log execution
+
+				proc, err := s.VirtualOS.StartProcess(execPath, tokens, &vos.ProcAttr{
+					Env:   s.VirtualOS.Environ(),
+					Files: s.VirtualOS,
+				})
+				if err != nil {
+					fmt.Fprintf(s.Readline, "%s: %s\n", tokens[0], err)
+					continue
+				}
+
+				// fmt.Fprintln(s.Readline, "Executing", execPath)
+				// fmt.Fprintln(s.Readline, strings.Join(tokens, " | "))
+
+				honeypotCommand.Main(proc)
+			} else {
+				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
+				continue
+			}
 		}
 	}
 }
 
 func (s *Shell) Close() error {
-	return s.InteractionWriter.Close()
+	return s.toClose.Close()
 }
 
 func (s *Shell) builtinCd(args []string) {
@@ -242,10 +242,10 @@ func (s *Shell) builtinCd(args []string) {
 		fallthrough
 	case 2:
 		if err := s.VirtualOS.Chdir(args[1]); err != nil {
-			fmt.Fprintf(s.VirtualOS.Stdout(), "%s: %v\n", args[0], err)
+			fmt.Fprintf(s.VirtualOS.Stderr(), "%s: %v\n", args[0], err)
 		}
 	default:
-		fmt.Fprintf(s.VirtualOS.Stdout(), "%s: too many arguments\n", args[0])
+		fmt.Fprintf(s.VirtualOS.Stderr(), "%s: too many arguments\n", args[0])
 	}
 }
 
@@ -283,26 +283,56 @@ func (s *Shell) ls(args []string) {
 // cd
 // exit
 
-func NewMemOs(s ssh.Session) *VOSAdapter {
-	adapter := &VOSAdapter{
-		ProcArgs: []string{"/bin/sh"},
-		PID:      24629,
-		UID:      0,
-		Dir:      "/root",
-		Host:     "vm-4cb2f",
-		User: &user.User{
-			Uid:      "0",
-			Gid:      "0",
-			Username: s.User(),
-			Name:     s.User(),
-			HomeDir:  "/root",
-		},
+type listCloser []io.Closer
+
+func (lc listCloser) Close() error {
+	var lastErr error
+	for _, v := range lc {
+		if err := v.Close(); err != nil {
+			lastErr = err
+		}
 	}
 
-	adapter.VIO = NewVIOAdapter(s, s, s)
-	adapter.VEnv = &MapEnv{}
-	adapter.VFS = afero.NewMemMapFs()
-	CopyEnv(adapter, s)
+	return lastErr
+}
 
-	return adapter
+func newFakeOs(s ssh.Session, configuration *Configuration) (vos.VOS, io.Closer, error) {
+	var toClose listCloser
+
+	// Set up the filesystem.
+	vfs := vos.NewNopFs()
+	if configuration.RootFsTarPath != "" {
+		fd, err := os.Open(configuration.RootFsTarPath)
+		if err != nil {
+			toClose.Close()
+			return nil, nil, err
+		}
+		toClose = append(toClose, fd)
+		vfs = tarfs.New(tar.NewReader(fd))
+	}
+
+	sharedOS := vos.NewSharedOS(vfs, "vm-4cb2f")
+
+	// Set up I/O and loging.
+	os.MkdirAll(filepath.Join(".", "logs"), 0700)
+	logName := filepath.Join(".", "logs", fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339)))
+	logFd, err := os.Create(logName)
+	if err != nil {
+		toClose.Close()
+		return nil, nil, err
+	}
+	vio := Record(vos.NewVIOAdapter(s, s, s), logFd)
+	toClose = append(toClose, logFd)
+
+	tenantOS := vos.NewTenantOS(sharedOS)
+	shell, err := tenantOS.InitProc().StartProcess("/bin/sh", []string{"/bin/sh"}, &vos.ProcAttr{
+		Env:   s.Environ(),
+		Files: vio,
+	})
+	if err != nil {
+		toClose.Close()
+		return nil, nil, err
+	}
+
+	return shell, toClose, nil
 }

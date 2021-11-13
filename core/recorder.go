@@ -7,6 +7,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"josephlewis.net/osshit/core/vos"
 )
 
 type MockFd int
@@ -34,7 +36,7 @@ const (
 )
 
 type Recorder struct {
-	*VIOAdapter
+	*vos.VIOAdapter
 	mutex  sync.Mutex
 	output io.Writer
 }
@@ -112,7 +114,7 @@ func (r *Recorder) recordWrite(mockFd MockFd, from []byte, to io.Writer) (int, e
 	return amount, err
 }
 
-var _ VIO = (*Recorder)(nil)
+var _ vos.VIO = (*Recorder)(nil)
 
 type recorderReadCloser struct {
 	r       *Recorder
@@ -147,12 +149,12 @@ func (rc *recorderWriteCloser) Close() error {
 }
 
 // Record logs all events to output.
-func Record(toWrap VIO, output io.Writer) *Recorder {
+func Record(toWrap vos.VIO, output io.Writer) *Recorder {
 	recorder := &Recorder{
 		output: output,
 	}
 
-	recorder.VIOAdapter = NewVIOAdapter(
+	recorder.VIOAdapter = vos.NewVIOAdapter(
 		&recorderReadCloser{mockFd: fdStdin, r: recorder, wrapped: toWrap.Stdin()},
 		&recorderWriteCloser{mockFd: fdStdout, r: recorder, wrapped: toWrap.Stdout()},
 		&recorderWriteCloser{mockFd: fdStderr, r: recorder, wrapped: toWrap.Stderr()},

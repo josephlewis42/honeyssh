@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+option go_package = "github.com/josephlewis42/osshit/core/logger";
+
+message LogEntry {
+  // Timestamp of the log event in micros since the UNIX epoch.
+  int64	timestamp_micros = 1;
+
+  // Name of the resource doing the logging.
+  // This should be of the format /{type}/{name}[/{subtype}/{subtype name}...]
+  string resource = 2;
+
+  // Unique session identifier for the log message. Blank if the event
+  // wasn't in the context of a session.
+  string session_id = 3;
+
+  // Low values have fast decode so reserve them for future top-level use.
+  reserved 4 to 14;
+
+  oneof log_type {
+    // An attempt to log in to the honeypot.
+    LoginAttempt login_attempt = 15; // ID < 16 for fast proto decoding.
+    FilesystemOp filesystem_operation = 16;
+  };
+}
+
+enum OperationResult {
+  UNKNOWN = 0;
+  SUCCESS = 1;
+  FAILURE = 2;
+}
+
+message FilesystemOp {
+
+}
+
+message LoginAttempt {
+  // The result of the login attempt.
+  OperationResult result = 1;
+  // The username the login attempted to use.
+  string username = 2;
+  // Public key of the login attempt in SSH wire format
+  bytes public_key = 3;
+  // Password used in the login attempt.
+  string password = 4;
+  // Remote address of the machine.
+  string remote_addr = 5;
+  // Environment variables in key=value format.
+  repeated string environment_variables = 6;
+  // Shell parsed command string.
+  repeated string command = 7;
+  // Raw command string as passed to SSH.
+  string raw_command = 8;
+  // The SSH subsystem requested.
+  string subsystem = 9;
+}

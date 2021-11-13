@@ -18,7 +18,8 @@ const (
 )
 
 var (
-	errInvalid = errors.New("invalid argument")
+	errInvalid      = errors.New("invalid argument")
+	errTooManyLinks = errors.New("Too many levels of symbolic links")
 )
 
 // Virtual OS interface.
@@ -32,7 +33,7 @@ type OS interface {
 func Realpath(os OS, fpath string) (string, error) {
 
 	if len(fpath) == 0 {
-		return "", errInvalid
+		fpath = "."
 	}
 
 	if !path.IsAbs(fpath) {
@@ -79,7 +80,7 @@ func Realpath(os OS, fpath string) (string, error) {
 
 				nlinks++
 				if nlinks > 16 {
-					return "", errInvalid
+					return "", errTooManyLinks
 				}
 
 				var link string

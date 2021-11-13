@@ -23,11 +23,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"text/tabwriter"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core"
+	"josephlewis.net/osshit/core/logger"
 )
 
 type sshContextKey struct {
@@ -52,23 +52,35 @@ var serveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		log.Println("Initializing server...")
+
+		log.Println("Starting logger...")
+		logDest := cmd.ErrOrStderr()
+		if config.LogPath != "" {
+			f, err := os.OpenFile(config.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			logDest = f
+		}
+		eventLogger := logger.NewJsonLinesLogRecorder(logDest)
+
+		eventSource := fmt.Sprintf("/ssh/:%d", config.SSHPort)
+
 		server := &ssh.Server{
 			Addr: fmt.Sprintf(":%d", config.SSHPort),
 			Handler: func(s ssh.Session) {
-				// Duplicate output for things like scp or git which don't.
-				out := os.Stdout
-
-				tw := tabwriter.NewWriter(out, 8, 4, 4, ' ', 0)
-				fmt.Fprintf(tw, "Username\t%s\n", s.User())
-				fmt.Fprintf(tw, "Public Key\t%q\n", s.Context().Value(ContextAuthPublicKey))
-				fmt.Fprintf(tw, "Password\t%q\n", s.Context().Value(ContextAuthPassword))
-				fmt.Fprintf(tw, "RemoteAddr\t%q\n", s.RemoteAddr())
-				fmt.Fprintf(tw, "Environ\t%q\n", s.Environ())
-				fmt.Fprintf(tw, "Command\t%q\n", s.Command())
-				fmt.Fprintf(tw, "RawCommand\t%q\n", s.RawCommand())
-				fmt.Fprintf(tw, "Subsystem\t%q\n", s.Subsystem())
-
-				tw.Flush()
+				eventLogger.RecordLoginAttempt(s.Context(), eventSource, &logger.LoginAttempt{
+					Result:               logger.OperationResult_SUCCESS,
+					Username:             s.User(),
+					PublicKey:            s.Context().Value(ContextAuthPublicKey).([]byte),
+					Password:             fmt.Sprintf("%s", s.Context().Value(ContextAuthPassword)),
+					RemoteAddr:           fmt.Sprintf("%s", s.RemoteAddr()),
+					EnvironmentVariables: s.Environ(),
+					Command:              s.Command(),
+					RawCommand:           s.RawCommand(),
+					Subsystem:            s.Subsystem(),
+				})
 
 				fakeShell, err := core.NewShell(s, config)
 				if err != nil {
@@ -142,4 +154,5 @@ func init() {
 	serveCmd.Flags().StringVar(&config.HostKeyPath, "host-key", "", "Key for the server, random if unspecified.")
 	serveCmd.Flags().IntVar(&config.SSHPort, "port", 2222, "Port to open the honeypot on.")
 	serveCmd.Flags().StringVar(&config.RootFsTarPath, "root-fs", "", "Tar file to use as the root filesystem, empty if unspecified.")
+	serveCmd.Flags().StringVar(&config.LogPath, "log-path", "", "Path to use as a log file. Stderr if unspecified.")
 }

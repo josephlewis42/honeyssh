@@ -7,6 +7,7 @@ type Configuration struct {
 	Hostname      string `json:"hostname"`
 	RootFsTarPath string `json:"root_fs_tar_path"`
 	HostKeyPath   string `json:"host_key_path"`
+	LogPath       string `json:"log_path"`
 }
 
 func DefaultConfig() *Configuration {
