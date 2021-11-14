@@ -6,21 +6,23 @@ message LogEntry {
   // Timestamp of the log event in micros since the UNIX epoch.
   int64	timestamp_micros = 1;
 
-  // Name of the resource doing the logging.
-  // This should be of the format /{type}/{name}[/{subtype}/{subtype name}...]
-  string resource = 2;
-
   // Unique session identifier for the log message. Blank if the event
   // wasn't in the context of a session.
-  string session_id = 3;
+  string session_id = 2;
 
   // Low values have fast decode so reserve them for future top-level use.
-  reserved 4 to 14;
+  reserved 3 to 14;
 
   oneof log_type {
     // An attempt to log in to the honeypot.
     LoginAttempt login_attempt = 15; // ID < 16 for fast proto decoding.
     FilesystemOp filesystem_operation = 16;
+    OpenTTYLog open_tty_log = 17;
+    ConnectionLost connection_lost = 18;
+    RunCommand run_command = 19;
+    UnknownCommand unknown_command = 20;
+    TerminalUpdate terminal_update = 21;
+    OpenFile open_file = 22;
   };
 }
 
@@ -53,4 +55,56 @@ message LoginAttempt {
   string raw_command = 8;
   // The SSH subsystem requested.
   string subsystem = 9;
+}
+
+message OpenTTYLog {
+  string name = 1;
+}
+
+message ConnectionLost {
+}
+
+message RunCommand {
+  // Shell parsed command string.
+  repeated string command = 1;
+  // Raw command that the shell parsed.
+  string raw_command = 2;
+  // Environment variables in key=value format.
+  repeated string environment_variables = 3;
+  // Path to the resolved command.
+  string resolved_command_path = 4;
+}
+
+message UnknownCommand {
+  enum UnknownCommandStatus {
+    UNKNOWN = 0;
+    NOT_FOUND = 1; // Not found in $PATH.
+    NOT_EXECUTABLE = 2; // File in $PATH, but missing the executable bit.
+    NOT_IMPLEMENTED = 3; // Executable found, but not implemented.
+  }
+
+  // Shell parsed command string.
+  repeated string command = 1;
+  // Raw command that the shell parsed.
+  string raw_command = 2;
+  // Environment variables in key=value format.
+  repeated string environment_variables = 3;
+  // The reason the command was unknown.
+  UnknownCommandStatus status = 4;
+}
+
+message TerminalUpdate {
+  // Width of the terminal in characters.
+  int32 width  = 1;
+  // Height of the terminal in charactres.
+  int32 height = 2;
+  // Name of the connected terminal.
+  string term = 3;
+  // Whether the terminal is a PTY.
+  bool is_pty = 4;
+}
+
+message OpenFile {
+  // Path of the file that was opened.
+  string path = 1;
 }

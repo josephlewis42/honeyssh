@@ -17,30 +17,18 @@ limitations under the License.
 package cmd
 
 import (
-	"crypto/subtle"
-	"fmt"
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/gliderlabs/ssh"
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core"
-	"josephlewis.net/osshit/core/logger"
 )
 
-type sshContextKey struct {
-	name string
-}
-
 var (
-	// ContextAuthPublicKey holds the public key that the client sent to the
-	// server. Useful for fingerprinting.
-	ContextAuthPublicKey = sshContextKey{"auth-public-key"}
-	// ContextAuthPassword holds the password the client sent to the server.
-	ContextAuthPassword = sshContextKey{"auth-password"}
-
 	config = core.DefaultConfig()
 )
 
@@ -63,88 +51,33 @@ var serveCmd = &cobra.Command{
 			defer f.Close()
 			logDest = f
 		}
-		eventLogger := logger.NewJsonLinesLogRecorder(logDest)
 
-		eventSource := fmt.Sprintf("/ssh/:%d", config.SSHPort)
-
-		server := &ssh.Server{
-			Addr: fmt.Sprintf(":%d", config.SSHPort),
-			Handler: func(s ssh.Session) {
-				eventLogger.RecordLoginAttempt(s.Context(), eventSource, &logger.LoginAttempt{
-					Result:               logger.OperationResult_SUCCESS,
-					Username:             s.User(),
-					PublicKey:            s.Context().Value(ContextAuthPublicKey).([]byte),
-					Password:             fmt.Sprintf("%s", s.Context().Value(ContextAuthPassword)),
-					RemoteAddr:           fmt.Sprintf("%s", s.RemoteAddr()),
-					EnvironmentVariables: s.Environ(),
-					Command:              s.Command(),
-					RawCommand:           s.RawCommand(),
-					Subsystem:            s.Subsystem(),
-				})
-
-				fakeShell, err := core.NewShell(s, config)
-				if err != nil {
-					log.Println(err)
-					s.Exit(1)
-					return
-				}
-
-				// run shell
-				fakeShell.Run()
-				fakeShell.Close()
-
-				s.Exit(0)
-			},
-			PublicKeyHandler: func(ctx ssh.Context, key ssh.PublicKey) bool {
-				ctx.SetValue(ContextAuthPublicKey, key.Marshal())
-				return false
-			},
-			PasswordHandler: func(ctx ssh.Context, password string) bool {
-				ctx.SetValue(ContextAuthPassword, password)
-				return 0 == subtle.ConstantTimeCompare([]byte(password), []byte("password"))
-			},
+		honeypot, err := core.NewHoneypot(config, logDest)
+		if err != nil {
+			return err
 		}
 
-		if config.HostKeyPath != "" {
-			log.Printf("- Using host key: %q\n", config.HostKeyPath)
-			server.SetOption(ssh.HostKeyFile(config.HostKeyPath))
-		}
-
-		sigs := make(chan os.Signal, 1)
-		done := make(chan bool, 1)
-		serverErr := make(chan error, 1)
-
 		go func() {
-			log.Printf("- Starting SSH server on %s\n", server.Addr)
-			serverErr <- server.ListenAndServe()
-		}()
-
-		log.Println("- Starting interrupt handler")
-		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-		go func() {
-			for {
-				sig := <-sigs
-				switch sig {
-				case syscall.SIGINT:
-					// TODO send out a maintenance signal.
-					fallthrough
-				case syscall.SIGTERM, syscall.SIGKILL:
-					log.Printf("Got signal %q, terminating...", sig)
-					done <- true
-					return
-				}
+			if err := honeypot.ListenAndServe(); err != nil {
+				log.Fatal(err)
 			}
 		}()
 
-		select {
-		case err := <-serverErr:
-			// Failure
-			return fmt.Errorf("server failure: %v", err)
+		sigs := make(chan os.Signal, 1)
 
-		case <-done:
-			// graceful termination
-			return nil
+		log.Println("- Starting interrupt handler")
+		signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+		sig := <-sigs
+		log.Printf("Got signal %q, terminating...", sig)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := honeypot.Shutdown(ctx); err != nil {
+			log.Fatalf("Server shutdown failed: %s", err)
 		}
+		log.Print("Server exited")
+		return nil
 	},
 }
 

@@ -1,24 +1,20 @@
 package core
 
 import (
-	"archive/tar"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
 	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/vos"
-	"josephlewis.net/osshit/third_party/tarfs"
 )
 
 const (
@@ -40,39 +36,20 @@ var (
 type Shell struct {
 	VirtualOS vos.VOS
 	Readline  *readline.Instance
-	toClose   listCloser
+	lastRet   int
 }
 
-func NewShell(s ssh.Session, configuration *Configuration) (*Shell, error) {
-	pty, winch, isPty := s.Pty()
-	windowWidth := pty.Window.Width
-	go (func() {
-		for {
-			select {
-			case window, ok := <-winch:
-				if !ok {
-					return
-				}
-				windowWidth = window.Width
-			}
-		}
-	})()
-
-	virtualOS, toClose, err := newFakeOs(s, configuration)
-	if err != nil {
-		return nil, err
-	}
+func NewShell(s ssh.Session, virtualOS vos.VOS) (*Shell, error) {
 
 	cfg := &readline.Config{
 		Stdin:  readline.NewCancelableStdin(virtualOS.Stdin()),
 		Stdout: virtualOS.Stdout(),
 		Stderr: virtualOS.Stderr(),
 		FuncGetWidth: func() int {
-			return windowWidth
+			return virtualOS.GetPTY().Width
 		},
-
 		FuncIsTerminal: func() bool {
-			return isPty
+			return virtualOS.GetPTY().IsPTY
 		},
 	}
 
@@ -89,16 +66,10 @@ func NewShell(s ssh.Session, configuration *Configuration) (*Shell, error) {
 		VirtualOS: virtualOS,
 		Readline:  readline,
 	}
-	shell.toClose = append(shell.toClose, toClose)
 
 	shell.Init(s.User())
 
 	return shell, nil
-}
-
-// Path gets the search path for commands.
-func (s *Shell) Path() []string {
-	return strings.Split(s.VirtualOS.Getenv(EnvPath), ":")
 }
 
 // Init sets up the environment similar to login + source ~/.bashrc.
@@ -177,7 +148,20 @@ func (s *Shell) Run() {
 				continue
 			}
 			for i, tok := range tokens {
-				tokens[i] = s.VirtualOS.ExpandEnv(tok)
+				tokens[i] = os.Expand(tok, func(env string) string {
+					switch {
+					case env == "$": // $$
+						return fmt.Sprintf("%d", s.VirtualOS.Getpid())
+					case env == "?": // $?
+						return fmt.Sprintf("%d", uint8(s.lastRet))
+					case env == "WIDTH":
+						return fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width)
+					case env == "HEIGHT":
+						return fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height)
+					default:
+						return s.VirtualOS.Getenv(env)
+					}
+				})
 			}
 
 			if len(tokens) == 0 {
@@ -222,17 +206,13 @@ func (s *Shell) Run() {
 				// fmt.Fprintln(s.Readline, "Executing", execPath)
 				// fmt.Fprintln(s.Readline, strings.Join(tokens, " | "))
 
-				honeypotCommand.Main(proc)
+				s.lastRet = honeypotCommand.Main(proc)
 			} else {
 				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
 				continue
 			}
 		}
 	}
-}
-
-func (s *Shell) Close() error {
-	return s.toClose.Close()
 }
 
 func (s *Shell) builtinCd(args []string) {
@@ -294,45 +274,4 @@ func (lc listCloser) Close() error {
 	}
 
 	return lastErr
-}
-
-func newFakeOs(s ssh.Session, configuration *Configuration) (vos.VOS, io.Closer, error) {
-	var toClose listCloser
-
-	// Set up the filesystem.
-	vfs := vos.NewNopFs()
-	if configuration.RootFsTarPath != "" {
-		fd, err := os.Open(configuration.RootFsTarPath)
-		if err != nil {
-			toClose.Close()
-			return nil, nil, err
-		}
-		toClose = append(toClose, fd)
-		vfs = tarfs.New(tar.NewReader(fd))
-	}
-
-	sharedOS := vos.NewSharedOS(vfs, "vm-4cb2f")
-
-	// Set up I/O and loging.
-	os.MkdirAll(filepath.Join(".", "logs"), 0700)
-	logName := filepath.Join(".", "logs", fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339)))
-	logFd, err := os.Create(logName)
-	if err != nil {
-		toClose.Close()
-		return nil, nil, err
-	}
-	vio := Record(vos.NewVIOAdapter(s, s, s), logFd)
-	toClose = append(toClose, logFd)
-
-	tenantOS := vos.NewTenantOS(sharedOS)
-	shell, err := tenantOS.InitProc().StartProcess("/bin/sh", []string{"/bin/sh"}, &vos.ProcAttr{
-		Env:   s.Environ(),
-		Files: vio,
-	})
-	if err != nil {
-		toClose.Close()
-		return nil, nil, err
-	}
-
-	return shell, toClose, nil
 }

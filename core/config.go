@@ -1,5 +1,7 @@
 package core
 
+import "path/filepath"
+
 // https://cloudinit.readthedocs.io/en/latest/topics/instancedata.html
 type Configuration struct {
 	Motd          string `json:"motd"`
@@ -17,5 +19,6 @@ func DefaultConfig() *Configuration {
 		Hostname:      "localhost",
 		RootFsTarPath: "",
 		HostKeyPath:   "", // Genreate a key.
+		LogPath:       filepath.Join(".", "logs"),
 	}
 }
