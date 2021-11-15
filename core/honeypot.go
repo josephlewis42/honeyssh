@@ -53,6 +53,7 @@ func NewHoneypot(configuration *Configuration, stderr io.Writer) (*Honeypot, err
 	}
 
 	sharedOS := vos.NewSharedOS(vfs, "vm-4cb2f")
+	sharedOS.SetPID(4507)
 
 	honeypot := &Honeypot{
 		configuration: configuration,

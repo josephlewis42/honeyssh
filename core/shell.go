@@ -8,7 +8,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
@@ -176,9 +175,6 @@ func (s *Shell) Run() {
 			case "cd":
 				s.builtinCd(tokens)
 				continue
-			case "ls":
-				s.ls(tokens)
-				continue
 			}
 
 			execPath, err := vos.LookPath(s.VirtualOS, tokens[0])
@@ -203,9 +199,6 @@ func (s *Shell) Run() {
 					continue
 				}
 
-				// fmt.Fprintln(s.Readline, "Executing", execPath)
-				// fmt.Fprintln(s.Readline, strings.Join(tokens, " | "))
-
 				s.lastRet = honeypotCommand.Main(proc)
 			} else {
 				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
@@ -226,33 +219,6 @@ func (s *Shell) builtinCd(args []string) {
 		}
 	default:
 		fmt.Fprintf(s.VirtualOS.Stderr(), "%s: too many arguments\n", args[0])
-	}
-}
-
-func (s *Shell) ls(args []string) {
-	d, err := s.VirtualOS.Getwd()
-	if err != nil {
-		fmt.Fprintf(s.VirtualOS.Stderr(), "%v\n", err)
-		return
-	}
-
-	file, err := s.VirtualOS.Open(d)
-	if err != nil {
-		fmt.Fprintf(s.VirtualOS.Stderr(), "%v\n", err)
-		return
-	}
-
-	paths, err := file.Readdir(-1)
-	if err != nil {
-		fmt.Fprintf(s.VirtualOS.Stderr(), "%v\n", err)
-		return
-	}
-
-	tw := tabwriter.NewWriter(s.VirtualOS.Stdout(), 8, 8, 4, ' ', 0)
-	defer tw.Flush()
-
-	for _, f := range paths {
-		fmt.Fprintf(tw, "%s\t%d\t%s\t%s\n", f.Mode().String(), f.Size(), f.ModTime(), f.Name())
 	}
 }
 

@@ -3,6 +3,7 @@ all: build test
 
 .PHONY: build
 build:
+	go generate ./...
 	go build -o osshit ./main.go
 
 .PHONY: test

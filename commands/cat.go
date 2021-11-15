@@ -18,7 +18,7 @@ func Cat(virtOS vos.VOS) int {
 		return 1
 	}
 
-	for _, arg := range virtOS.Args()[1:] {
+	for _, arg := range flags.Args() {
 		fd, err := virtOS.Open(arg)
 		if err != nil {
 			fmt.Fprintf(virtOS.Stderr(), "cat: %v\n", err)

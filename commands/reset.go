@@ -8,9 +8,10 @@ import (
 
 // Reset implements the UNIX reset command.
 func Reset(virtOS vos.VOS) int {
-	// Assumes VT100 compatibility.
-	fmt.Fprintf(virtOS.Stdout(), "\033c")
-
+	if virtOS.GetPTY().IsPTY {
+		// Assumes VT100 compatibility.
+		fmt.Fprintf(virtOS.Stdout(), "\033c")
+	}
 	return 0
 }
 

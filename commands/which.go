@@ -17,7 +17,7 @@ func Which(virtOS vos.VOS) int {
 		return 1
 	}
 
-	for _, arg := range virtOS.Args()[1:] {
+	for _, arg := range flags.Args() {
 		res, err := vos.LookPath(virtOS, arg)
 		if err == nil {
 			fmt.Fprintln(virtOS.Stdout(), res)
