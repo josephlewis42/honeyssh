@@ -36,6 +36,7 @@ type Shell struct {
 	VirtualOS vos.VOS
 	Readline  *readline.Instance
 	lastRet   int
+	history   []string
 }
 
 func NewShell(s ssh.Session, virtualOS vos.VOS) (*Shell, error) {
@@ -125,6 +126,10 @@ func (s *Shell) Run() {
 		s.Readline.SetPrompt(s.Prompt())
 		line, err := s.Readline.Readline()
 
+		// This doesn't make sense for shell, but it needs to be kept in line with
+		// the readline history.
+		s.history = append(s.history, line)
+
 		switch {
 		case err == io.EOF:
 			return // Input closed, quit.
@@ -169,11 +174,12 @@ func (s *Shell) Run() {
 
 			// TODO check for = in paths to set up environment variables for commnad
 			// to come.
-			switch tokens[0] {
-			case "exit":
+			if tokens[0] == "exit" {
 				return
-			case "cd":
-				s.builtinCd(tokens)
+			}
+
+			if builtin, ok := AllBuiltins[tokens[0]]; ok {
+				s.lastRet = builtin.Main(s, tokens)
 				continue
 			}
 
@@ -208,25 +214,9 @@ func (s *Shell) Run() {
 	}
 }
 
-func (s *Shell) builtinCd(args []string) {
-	switch len(args) {
-	case 1:
-		args = append(args, s.VirtualOS.Getenv(EnvHome))
-		fallthrough
-	case 2:
-		if err := s.VirtualOS.Chdir(args[1]); err != nil {
-			fmt.Fprintf(s.VirtualOS.Stderr(), "%s: %v\n", args[0], err)
-		}
-	default:
-		fmt.Fprintf(s.VirtualOS.Stderr(), "%s: too many arguments\n", args[0])
-	}
-}
-
 // builtins
 // pushd
 // popd
-// pwd
-// cd
 // exit
 
 type listCloser []io.Closer
