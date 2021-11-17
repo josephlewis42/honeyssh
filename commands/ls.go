@@ -2,7 +2,6 @@ package commands
 
 import (
 	"archive/tar"
-	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
 )
 
@@ -38,20 +38,25 @@ func Ls(virtOS vos.VOS) int {
 		}
 	}
 
-	flags := flag.NewFlagSet("ls", flag.ContinueOnError)
-	flags.SetOutput(virtOS.Stderr())
-	flags.Usage = func() {
-		fmt.Fprintln(virtOS.Stderr(), "Usage: ls [OPTION]... [FILE]...")
-		fmt.Fprintln(virtOS.Stderr(), "List information about the FILEs (the current directory by default).")
-	}
+	opts := getopt.New()
+	listAll := opts.Bool('a', "don't ignore entries starting with .")
+	longListing := opts.Bool('l', "use a long listing format")
+	helpOpt := opts.BoolLong("help", '?', "show help and exit")
 
-	listAll := flags.Bool("a", false, "don't ignore entries starting with .")
-	longListing := flags.Bool("l", false, "use a long listing format")
-	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
+	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *helpOpt {
+		w := virtOS.Stderr()
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
+		fmt.Fprintln(w, "Usage: ls [OPTION]... [FILE]...")
+		fmt.Fprintln(w, "List information about the FILEs (the current directory by default).")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Flags:")
+		opts.PrintOptions(w)
 		return 1
 	}
 
-	directoriesToList := flags.Args()
+	directoriesToList := opts.Args()
 	if len(directoriesToList) == 0 {
 		directoriesToList = append(directoriesToList, ".")
 	}
