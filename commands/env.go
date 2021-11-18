@@ -12,6 +12,8 @@ func Env(virtOS vos.VOS) int {
 	flags := flag.NewFlagSet("env", flag.ContinueOnError)
 	flags.SetOutput(virtOS.Stderr())
 	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
+		virtOS.LogInvalidInvocation(err)
+
 		fmt.Fprintln(virtOS.Stderr(), "Usage: env")
 		fmt.Fprintln(virtOS.Stderr(), "Print the resulting environment.")
 		return 1

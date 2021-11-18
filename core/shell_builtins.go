@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pborman/getopt/v2"
 )
@@ -21,8 +22,21 @@ func (f ShellBuiltinFunc) Main(s *Shell, args []string) int {
 
 var _ ShellBuiltin = (ShellBuiltinFunc)(nil)
 
-// Nop is a shell builtin that does nothing.
-func Nop(s *Shell, args []string) int {
+func Unset(s *Shell, args []string) int {
+	opts := getopt.New()
+	opts.Bool('f', "treat NAME as a function")
+	opts.Bool('v', "treat NAME as a variable")
+	opts.Bool('n', "treat NAME as a reference")
+	helpOpt := opts.BoolLong("help", 'h', "show help and exit")
+
+	optErr := opts.Getopt(args, nil)
+	w := s.VirtualOS.Stdout()
+
+	if optErr != nil || *helpOpt {
+		fmt.Fprintln(w, "usage: unset [-fvn] [NAME...]")
+		fmt.Fprintln(w, "Unset shell values and functions.")
+	}
+
 	return 0
 }
 
@@ -84,13 +98,27 @@ func History(s *Shell, args []string) int {
 	return 0
 }
 
-func init() {
-	for _, name := range []string{
-		"unset",
-	} {
-		AllBuiltins[name] = ShellBuiltinFunc(Nop)
+func Help(s *Shell, args []string) int {
+	w := s.VirtualOS.Stdout()
+	fmt.Fprintln(w, "sh version 4.31.20")
+	fmt.Fprintln(w, "These shell commands are defined internally.  Type `help' to see this list.")
+	fmt.Fprintln(w, "Type `help name' to find out more about the function `name'.")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Builtins:\n")
+
+	var builtins []string
+	for k := range AllBuiltins {
+		builtins = append(builtins, k)
 	}
 
+	fmt.Fprintln(w, strings.Join(builtins, "\n"))
+
+	return 0
+}
+
+func init() {
+	AllBuiltins["unset"] = ShellBuiltinFunc(Unset)
 	AllBuiltins["cd"] = ShellBuiltinFunc(Cd)
 	AllBuiltins["history"] = ShellBuiltinFunc(History)
+	AllBuiltins["help"] = ShellBuiltinFunc(Help)
 }

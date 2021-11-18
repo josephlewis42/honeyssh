@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	"josephlewis.net/osshit/core/logger"
 )
 
 type TenantProcOS struct {
@@ -138,4 +140,13 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 	}
 
 	return out, nil
+}
+
+func (ea *TenantProcOS) LogInvalidInvocation(err error) {
+	ea.TenantOS.eventRecorder.Record(&logger.LogEntry_InvalidInvocation{
+		InvalidInvocation: &logger.InvalidInvocation{
+			Command: ea.Args(),
+			Error:   err.Error(),
+		},
+	})
 }

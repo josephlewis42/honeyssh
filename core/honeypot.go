@@ -164,7 +164,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	}
 
 	// Start shell
-	fakeShell, err := NewShell(s, shellOS)
+	fakeShell, err := NewShell(shellOS)
 	if err != nil {
 		s.Exit(1)
 		return err

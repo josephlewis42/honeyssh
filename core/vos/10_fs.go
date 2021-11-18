@@ -30,7 +30,7 @@ func NewCopyOnWriteFs(tarReader *tar.Reader) VFS {
 	lfsMemfs := NewLinkingFs(memFs)
 	ufs := cowfs.NewCopyOnWriteFs(roBase, lfsMemfs)
 
-	return NewLoggingFs(ufs, "union")
+	return ufs
 }
 
 func NewLoggingFs(base VFS, fsName string) VFS {
@@ -43,8 +43,6 @@ func NewLoggingFs(base VFS, fsName string) VFS {
 func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error)) VFS {
 	rpos := &realpathOs{Getwd, base}
 	return NewPathMappingFs(base, func(op FsOp, name string) (string, error) {
-		wd, _ := Getwd()
-		fmt.Printf("FS operation %s(%q) cwd: %q\n", op, name, wd)
 		return realpath.Realpath(rpos, name)
 	})
 }

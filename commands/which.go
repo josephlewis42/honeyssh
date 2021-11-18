@@ -12,6 +12,8 @@ func Which(virtOS vos.VOS) int {
 	flags := flag.NewFlagSet("which", flag.ContinueOnError)
 	flags.SetOutput(virtOS.Stderr())
 	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
+		virtOS.LogInvalidInvocation(err)
+
 		fmt.Fprintln(virtOS.Stderr(), "Usage: which args")
 		fmt.Fprintln(virtOS.Stderr(), "Locate a command.")
 		return 1

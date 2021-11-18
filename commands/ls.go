@@ -18,15 +18,7 @@ import (
 // Ls implements the UNIX ls command.
 func Ls(virtOS vos.VOS) int {
 
-	// TODO: look up the actual UID
-	uid2name := func(uid int) string {
-		switch uid {
-		case 0:
-			return "root"
-		default:
-			return fmt.Sprintf("%d", uid)
-		}
-	}
+	uid2name := UidResolver(virtOS)
 
 	// TODO: look up the actual GID
 	gid2name := func(gid int) string {
@@ -41,11 +33,13 @@ func Ls(virtOS vos.VOS) int {
 	opts := getopt.New()
 	listAll := opts.Bool('a', "don't ignore entries starting with .")
 	longListing := opts.Bool('l', "use a long listing format")
+	humanSize := opts.BoolLong("human-readable", 'h', "print human readable sizes")
 	helpOpt := opts.BoolLong("help", '?', "show help and exit")
 
 	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *helpOpt {
 		w := virtOS.Stderr()
 		if err != nil {
+			virtOS.LogInvalidInvocation(err)
 			fmt.Fprintln(w, err)
 		}
 		fmt.Fprintln(w, "Usage: ls [OPTION]... [FILE]...")
@@ -56,6 +50,7 @@ func Ls(virtOS vos.VOS) int {
 		return 1
 	}
 
+	// Initialize arguments
 	directoriesToList := opts.Args()
 	if len(directoriesToList) == 0 {
 		directoriesToList = append(directoriesToList, ".")
@@ -63,6 +58,13 @@ func Ls(virtOS vos.VOS) int {
 	sort.Strings(directoriesToList)
 
 	showDirectoryNames := len(directoriesToList) > 1
+
+	sizeFmt := func(bytes int64) string {
+		return fmt.Sprintf("%d", bytes)
+	}
+	if *humanSize {
+		sizeFmt = BytesToHuman
+	}
 
 	exitCode := 0
 
@@ -126,12 +128,12 @@ func Ls(virtOS vos.VOS) int {
 				}
 
 				uid, gid := getUIDGID(f)
-				fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%d\t%s\t%s\n",
+				fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
 					f.Mode().String(),
 					hardLinks,
 					uid2name(uid),
 					gid2name(gid),
-					f.Size(),
+					sizeFmt(f.Size()),
 					modTime,
 					f.Name())
 			}

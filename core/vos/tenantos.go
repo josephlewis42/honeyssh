@@ -1,6 +1,7 @@
 package vos
 
 import (
+	"io"
 	"net"
 	"time"
 
@@ -24,6 +25,10 @@ type TenantOS struct {
 	user string
 	// Remote address of the connected user.
 	remoteAddr net.Addr
+
+	sshStdout io.Writer
+
+	sshExit func(int) error
 }
 
 type EventRecorder interface {
@@ -41,6 +46,8 @@ func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session ssh.Se
 		loginTime:     time.Now(),
 		user:          session.User(),
 		remoteAddr:    session.RemoteAddr(),
+		sshExit:       session.Exit,
+		sshStdout:     session,
 	}
 }
 
@@ -99,4 +106,12 @@ func (t *TenantOS) SSHRemoteAddr() net.Addr {
 		return &net.IPNet{IP: net.IPv4(127, 0, 0, 1), Mask: net.IPv4Mask(255, 255, 255, 255)}
 	}
 	return t.remoteAddr
+}
+
+func (t *TenantOS) SSHStdout() io.Writer {
+	return t.sshStdout
+}
+
+func (t *TenantOS) SSHExit(code int) error {
+	return t.sshExit(code)
 }

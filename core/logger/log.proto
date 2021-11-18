@@ -23,6 +23,7 @@ message LogEntry {
     UnknownCommand unknown_command = 20;
     TerminalUpdate terminal_update = 21;
     OpenFile open_file = 22;
+    InvalidInvocation invalid_invocation = 23;
   };
 }
 
@@ -107,4 +108,10 @@ message TerminalUpdate {
 message OpenFile {
   // Path of the file that was opened.
   string path = 1;
+}
+
+// A potential missing Honeypot feature, should be reported or fixed.
+message InvalidInvocation {
+  repeated string command = 1;
+  string error = 2;
 }

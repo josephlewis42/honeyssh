@@ -11,7 +11,6 @@ import (
 
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
-	"github.com/gliderlabs/ssh"
 	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/vos"
 )
@@ -39,7 +38,7 @@ type Shell struct {
 	history   []string
 }
 
-func NewShell(s ssh.Session, virtualOS vos.VOS) (*Shell, error) {
+func NewShell(virtualOS vos.VOS) (*Shell, error) {
 
 	cfg := &readline.Config{
 		Stdin:  readline.NewCancelableStdin(virtualOS.Stdin()),
@@ -67,7 +66,7 @@ func NewShell(s ssh.Session, virtualOS vos.VOS) (*Shell, error) {
 		Readline:  readline,
 	}
 
-	shell.Init(s.User())
+	shell.Init(virtualOS.SSHUser())
 
 	return shell, nil
 }
@@ -172,8 +171,24 @@ func (s *Shell) Run() {
 				continue
 			}
 
-			// TODO check for = in paths to set up environment variables for commnad
-			// to come.
+			// Take off command environment variables
+			var cmdEnv []string
+			for _, tok := range tokens {
+				if strings.Contains(tok, "=") {
+					cmdEnv = append(cmdEnv, tok)
+				}
+			}
+
+			// If the full command was environment variables, set them. Otherwise they
+			// should only be populated for the upcoming command.
+			if len(cmdEnv) == len(tokens) {
+				vos.CopyEnv(s.VirtualOS, vos.NewMapEnvFromEnvList(cmdEnv))
+				continue
+			} else {
+				tokens = tokens[len(cmdEnv):]
+			}
+
+			// Execute builtins
 			if tokens[0] == "exit" {
 				return
 			}
@@ -183,6 +198,7 @@ func (s *Shell) Run() {
 				continue
 			}
 
+			// Execute programs
 			execPath, err := vos.LookPath(s.VirtualOS, tokens[0])
 			switch {
 			case err == vos.ErrNotFound:
@@ -195,9 +211,12 @@ func (s *Shell) Run() {
 
 			if honeypotCommand, ok := commands.AllCommands[execPath]; ok {
 				// TODO log execution
+				var env []string
+				env = append(env, s.VirtualOS.Environ()...)
+				env = append(env, cmdEnv...)
 
 				proc, err := s.VirtualOS.StartProcess(execPath, tokens, &vos.ProcAttr{
-					Env:   s.VirtualOS.Environ(),
+					Env:   env,
 					Files: s.VirtualOS,
 				})
 				if err != nil {
