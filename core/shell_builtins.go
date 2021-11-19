@@ -58,6 +58,12 @@ func Cd(s *Shell, args []string) int {
 	return 0
 }
 
+// Exit quits the shell
+func Exit(s *Shell, args []string) int {
+	s.VirtualOS.SSHExit(0)
+	return 0
+}
+
 func History(s *Shell, args []string) int {
 	// parse -c to clear
 
@@ -122,4 +128,5 @@ func init() {
 	AllBuiltins["cd"] = ShellBuiltinFunc(Cd)
 	AllBuiltins["history"] = ShellBuiltinFunc(History)
 	AllBuiltins["help"] = ShellBuiltinFunc(Help)
+	AllBuiltins["exit"] = ShellBuiltinFunc(Exit)
 }

@@ -189,10 +189,6 @@ func (s *Shell) Run() {
 			}
 
 			// Execute builtins
-			if tokens[0] == "exit" {
-				return
-			}
-
 			if builtin, ok := AllBuiltins[tokens[0]]; ok {
 				s.lastRet = builtin.Main(s, tokens)
 				continue
