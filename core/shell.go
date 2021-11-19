@@ -150,42 +150,42 @@ func (s *Shell) Run() {
 				fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
 				continue
 			}
-			for i, tok := range tokens {
-				tokens[i] = os.Expand(tok, func(env string) string {
-					switch {
-					case env == "$": // $$
-						return fmt.Sprintf("%d", s.VirtualOS.Getpid())
-					case env == "?": // $?
-						return fmt.Sprintf("%d", uint8(s.lastRet))
-					case env == "WIDTH":
-						return fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width)
-					case env == "HEIGHT":
-						return fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height)
-					default:
-						return s.VirtualOS.Getenv(env)
-					}
-				})
-			}
-
 			if len(tokens) == 0 {
 				continue
 			}
 
 			// Take off command environment variables
-			var cmdEnv []string
-			for _, tok := range tokens {
+			effectiveEnv := s.VirtualOS.Environ()
+			var cmdEnvStop int
+			for ; cmdEnvStop < len(tokens); cmdEnvStop++ {
+				tok := tokens[cmdEnvStop]
 				if strings.Contains(tok, "=") {
-					cmdEnv = append(cmdEnv, tok)
+					effectiveEnv = append(effectiveEnv, tok)
+				} else {
+					break
 				}
 			}
 
+			tokens = tokens[cmdEnvStop:]
+
 			// If the full command was environment variables, set them. Otherwise they
 			// should only be populated for the upcoming command.
-			if len(cmdEnv) == len(tokens) {
-				vos.CopyEnv(s.VirtualOS, vos.NewMapEnvFromEnvList(cmdEnv))
+			if 0 == len(tokens) {
+				vos.CopyEnv(s.VirtualOS, vos.NewMapEnvFromEnvList(effectiveEnv))
 				continue
-			} else {
-				tokens = tokens[len(cmdEnv):]
+			}
+
+			// Expand the environment
+			for i, tok := range tokens {
+				mapEnv := vos.NewMapEnvFromEnvList(effectiveEnv)
+
+				// Shell only arguments
+				mapEnv.Setenv("$", fmt.Sprintf("%d", s.VirtualOS.Getpid()))
+				mapEnv.Setenv("?", fmt.Sprintf("%d", uint8(s.lastRet)))
+				mapEnv.Setenv("WIDTH", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width))
+				mapEnv.Setenv("HEIGHT", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height))
+
+				tokens[i] = os.Expand(tok, mapEnv.Getenv)
 			}
 
 			// Execute builtins
@@ -211,12 +211,8 @@ func (s *Shell) Run() {
 
 			if honeypotCommand, ok := commands.AllCommands[execPath]; ok {
 				// TODO log execution
-				var env []string
-				env = append(env, s.VirtualOS.Environ()...)
-				env = append(env, cmdEnv...)
-
 				proc, err := s.VirtualOS.StartProcess(execPath, tokens, &vos.ProcAttr{
-					Env:   env,
+					Env:   effectiveEnv,
 					Files: s.VirtualOS,
 				})
 				if err != nil {
@@ -231,6 +227,14 @@ func (s *Shell) Run() {
 			}
 		}
 	}
+}
+
+func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
+
+}
+
+func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
+
 }
 
 // builtins
