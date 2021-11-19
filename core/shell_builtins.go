@@ -60,7 +60,7 @@ func Cd(s *Shell, args []string) int {
 
 // Exit quits the shell
 func Exit(s *Shell, args []string) int {
-	s.VirtualOS.SSHExit(0)
+	s.Quit = true
 	return 0
 }
 

@@ -48,24 +48,6 @@ func LookPath(vos VOS, file string) (string, error) {
 	return "", ErrNotFound
 }
 
-// func Exec(vos VOS, cmd string, args []string) Layer2VOS {
-// 	pwd, _ := vos.Getwd()
-// 	execPath, _ := LookPath(vos, cmd)
-// 	return &FakeProc{
-// 		Layer1VOS: vos,
-// 		VIO:       vos,
-// 		// TODO: make copy of env.
-// 		VEnv: vos,
-// 		MockProc: MockProc{
-// 			ExecutablePath: execPath,
-// 			ProcArgs:       append([]string{cmd}, args...),
-// 			PID:            vos.Getpid() + 1,
-// 			UID:            vos.Getuid(),
-// 			Dir:            pwd,
-// 		},
-// 	}
-// }
-
 type VProc interface {
 	// Returns the path to the executable that started the process.
 	Executable() (string, error)

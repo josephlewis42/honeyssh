@@ -3,9 +3,10 @@ package core
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -36,6 +37,9 @@ type Shell struct {
 	Readline  *readline.Instance
 	lastRet   int
 	history   []string
+
+	// Set to true to quit the shell
+	Quit bool
 }
 
 func NewShell(virtualOS vos.VOS) (*Shell, error) {
@@ -121,7 +125,7 @@ func (s *Shell) Prompt() string {
 }
 
 func (s *Shell) Run() {
-	for {
+	for !s.Quit {
 		s.Readline.SetPrompt(s.Prompt())
 		line, err := s.Readline.Readline()
 
@@ -188,55 +192,82 @@ func (s *Shell) Run() {
 				tokens[i] = os.Expand(tok, mapEnv.Getenv)
 			}
 
-			// Execute builtins
-			if builtin, ok := AllBuiltins[tokens[0]]; ok {
-				s.lastRet = builtin.Main(s, tokens)
-				continue
-			}
-
-			// Execute programs
-			execPath, err := vos.LookPath(s.VirtualOS, tokens[0])
-			switch {
-			case err == vos.ErrNotFound:
-				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
-				continue
-			case err == fs.ErrPermission || err != nil:
-				fmt.Fprintf(s.Readline, "%s: permission denied\n", tokens[0])
-				continue
-			}
-
-			if honeypotCommand, ok := commands.AllCommands[execPath]; ok {
-				// TODO log execution
-				proc, err := s.VirtualOS.StartProcess(execPath, tokens, &vos.ProcAttr{
-					Env:   effectiveEnv,
-					Files: s.VirtualOS,
-				})
-				if err != nil {
-					fmt.Fprintf(s.Readline, "%s: %s\n", tokens[0], err)
-					continue
-				}
-
-				s.lastRet = honeypotCommand.Main(proc)
-			} else {
-				fmt.Fprintf(s.Readline, "%s: command not found\n", tokens[0])
-				continue
-			}
+			s.ExecuteProgramOrBuiltin(effectiveEnv, tokens)
 		}
 	}
 }
 
 func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
+	// Execute builtins
+	if builtin, ok := AllBuiltins[args[0]]; ok {
+		s.lastRet = builtin.Main(s, args)
+		return
+	}
 
+	s.ExecuteProgram(cmdEnv, args)
 }
 
 func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
 
+	shellCmd, shellPath, shellErr := FindCommand(s.VirtualOS, args[0])
+	execFsPath, execFsErr := vos.LookPath(s.VirtualOS, args[0])
+
+	switch {
+	case shellErr == nil && execFsErr == vos.ErrNotFound:
+		// Do nothing, always execute a found honeypot command, even if the FS says
+		// it doesn't exist.
+		execFsPath = shellPath
+
+		// TODO: add a case here for when the FS found the path but the honeypot
+		// didn't.
+	case shellErr == vos.ErrNotFound || execFsErr == vos.ErrNotFound:
+		fmt.Fprintf(s.Readline, "%s: command not found\n", args[0])
+		return
+	case shellErr != nil || execFsErr != nil:
+		fmt.Fprintf(s.Readline, "%s: permission denied\n", args[0])
+		return
+	}
+
+	// TODO log execution
+	proc, err := s.VirtualOS.StartProcess(execFsPath, args, &vos.ProcAttr{
+		Env:   cmdEnv,
+		Files: s.VirtualOS,
+	})
+	if err != nil {
+		fmt.Fprintf(s.Readline, "%s: %s\n", args[0], err)
+	}
+
+	s.lastRet = shellCmd.Main(proc)
 }
 
-// builtins
-// pushd
-// popd
-// exit
+func FindCommand(virtualOS vos.VOS, execPath string) (commands.HoneypotCommand, string, error) {
+	switch {
+	case !strings.Contains(execPath, "/"):
+		// Not a fully qualified command path try under all $PATHs.
+		for _, searchPath := range filepath.SplitList(virtualOS.Getenv("PATH")) {
+			if cmd, resPath, err := FindCommand(virtualOS, path.Join(searchPath, execPath)); err == nil {
+				return cmd, resPath, nil
+			}
+		}
+		return nil, "", vos.ErrNotFound
+
+	case !path.IsAbs(execPath):
+		// Not an absolute path, try again., try again.
+		wd, err := virtualOS.Getwd()
+		if err != nil {
+			return nil, "", err
+		}
+		execPath = path.Clean(path.Join(wd, execPath))
+		fallthrough
+
+	default:
+		cmd, ok := commands.AllCommands[execPath]
+		if !ok {
+			return nil, "", vos.ErrNotFound
+		}
+		return cmd, execPath, nil
+	}
+}
 
 type listCloser []io.Closer
 
