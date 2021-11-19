@@ -18,8 +18,6 @@ import (
 // Ls implements the UNIX ls command.
 func Ls(virtOS vos.VOS) int {
 
-	uid2name := UidResolver(virtOS)
-
 	// TODO: look up the actual GID
 	gid2name := func(gid int) string {
 		switch gid {
@@ -34,6 +32,7 @@ func Ls(virtOS vos.VOS) int {
 	listAll := opts.Bool('a', "don't ignore entries starting with .")
 	longListing := opts.Bool('l', "use a long listing format")
 	humanSize := opts.BoolLong("human-readable", 'h', "print human readable sizes")
+	lineWidth := opts.IntLong("width", 'w', virtOS.GetPTY().Width, "set the column width, 0 is infinite")
 	helpOpt := opts.BoolLong("help", '?', "show help and exit")
 
 	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *helpOpt {
@@ -65,6 +64,12 @@ func Ls(virtOS vos.VOS) int {
 	if *humanSize {
 		sizeFmt = BytesToHuman
 	}
+
+	if *lineWidth == 0 {
+		*lineWidth = math.MaxInt32
+	}
+
+	uid2name := UidResolver(virtOS)
 
 	exitCode := 0
 
@@ -140,11 +145,7 @@ func Ls(virtOS vos.VOS) int {
 			tw.Flush()
 		} else {
 			const minPaddingWidth = 2
-			width := virtOS.GetPTY().Width
-			if width == 0 {
-				width = math.MaxInt32
-			}
-			maxCols := width / (longestNameLength + minPaddingWidth)
+			maxCols := *lineWidth / (longestNameLength + minPaddingWidth)
 
 			var names []string
 			for _, f := range paths {

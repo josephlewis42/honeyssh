@@ -2,11 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path"
 	"strconv"
 	"strings"
 
+	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
 )
 
@@ -101,4 +103,58 @@ func UidResolver(virtOS vos.VOS) (resolver func(int) string) {
 	}
 
 	return
+}
+
+type SimpleCommand struct {
+	// Use holds a one line usage string
+	Use string
+	// Short holds a sone line description of the command.
+	Short string
+	// ShowHelp sets whether help is displayed or not.
+	// If this is non-nil when Run() is called, then the default help flag isn't
+	// added.
+	ShowHelp *bool
+
+	flags *getopt.Set
+}
+
+// Flags gets the command's flag set.
+func (s *SimpleCommand) Flags() *getopt.Set {
+	if s.flags == nil {
+		s.flags = getopt.New()
+	}
+
+	return s.flags
+}
+
+// PrintHelp writes help for the command to the given writer.
+func (s *SimpleCommand) PrintHelp(w io.Writer) {
+	fmt.Fprint(w, "usage: ")
+	fmt.Fprintln(w, s.Use)
+	fmt.Fprintln(w, s.Short)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Flags:")
+	s.Flags().PrintOptions(w)
+}
+
+// Run the command, if flag parsing was succcessful call the callback.
+func (s *SimpleCommand) Run(virtOS vos.VOS, callback func() int) int {
+	opts := s.Flags()
+
+	// Add help flag if not overridden.
+	if s.ShowHelp == nil {
+		s.ShowHelp = opts.BoolLong("help", 'h', "show this help and exit")
+	}
+
+	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *s.ShowHelp {
+		if err != nil {
+			virtOS.LogInvalidInvocation(err)
+			fmt.Fprintf(virtOS.Stderr(), "error: %s\n\n", err)
+		}
+
+		s.PrintHelp(virtOS.Stdout())
+		return 1
+	}
+
+	return callback()
 }

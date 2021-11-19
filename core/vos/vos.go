@@ -6,8 +6,21 @@ import (
 	"time"
 )
 
-type VNetwork interface {
+// Utsname mimics POSIX sys/utsname.h
+// https://pubs.opengroup.org/onlinepubs/7908799/xsh/sysutsname.h.html
+type Utsname struct {
+	Sysname    string // OS name e.g. "Linux".
+	Nodename   string // Hostname of the machine on one of its networks.
+	Release    string // OS release e.g. "4.15.0-147-generic"
+	Version    string // OS version e.g. "#151-Ubuntu SMP Fri Jun 18 19:21:19 UTC 2021"
+	Machine    string // Machnine name e.g. "x86_64"
+	Domainname string // NIS or YP domain name
+}
+
+type VKernel interface {
 	Hostname() (string, error)
+	// Uname mimics the uname syscall.
+	Uname() (Utsname, error)
 }
 
 type PTY struct {
@@ -19,7 +32,7 @@ type PTY struct {
 
 // VOS provides a virtual OS interface.
 type VOS interface {
-	VNetwork
+	VKernel
 	VEnv
 	VIO
 	VProc
@@ -51,3 +64,5 @@ type Honeypot interface {
 	// feature.
 	LogInvalidInvocation(err error)
 }
+
+// /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}.

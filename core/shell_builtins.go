@@ -104,7 +104,8 @@ func Help(s *Shell, args []string) int {
 	fmt.Fprintln(w, "These shell commands are defined internally.  Type `help' to see this list.")
 	fmt.Fprintln(w, "Type `help name' to find out more about the function `name'.")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Builtins:\n")
+	fmt.Fprintln(w, "Builtins:")
+	fmt.Fprintln(w)
 
 	var builtins []string
 	for k := range AllBuiltins {

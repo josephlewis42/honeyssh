@@ -7,12 +7,12 @@ import (
 	"github.com/spf13/afero"
 )
 
-func NewSharedOS(baseFS VFS, hostname string) *SharedOS {
+func NewSharedOS(baseFS VFS, utsname Utsname) *SharedOS {
 	return &SharedOS{
-		mockFS:       baseFS,
-		mockHostname: hostname,
-		mockPID:      0,
-		bootTime:     time.Now(),
+		mockFS:      baseFS,
+		mockUtsname: utsname,
+		mockPID:     0,
+		bootTime:    time.Now(),
 	}
 }
 
@@ -24,8 +24,8 @@ type SharedOS struct {
 	// mockFS holds the base filesystem that is shared between ALL programs.
 	mockFS VFS
 
-	// mockHostname holds the displayed hostname of the OS.
-	mockHostname string
+	// mockUtsname holds the displayed OS info including hostname.
+	mockUtsname Utsname
 
 	// mockPID contains the next PID of the system.
 	mockPID int32
@@ -35,7 +35,11 @@ type SharedOS struct {
 }
 
 func (s *SharedOS) Hostname() string {
-	return s.mockHostname
+	return s.mockUtsname.Nodename
+}
+
+func (s *SharedOS) Uname() Utsname {
+	return s.mockUtsname
 }
 
 // ReadOnlyFs returns a read only version of the base filesystem that multiple

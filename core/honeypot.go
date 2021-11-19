@@ -52,7 +52,14 @@ func NewHoneypot(configuration *Configuration, stderr io.Writer) (*Honeypot, err
 		vfs = tarfs.New(tar.NewReader(fd))
 	}
 
-	sharedOS := vos.NewSharedOS(vfs, "vm-4cb2f")
+	sharedOS := vos.NewSharedOS(vfs, vos.Utsname{
+		Sysname:    "Linux",
+		Nodename:   "vm-4cb2f",
+		Release:    "4.15.0-147-generic",
+		Version:    "#151-Ubuntu SMP",
+		Machine:    "x86_64",
+		Domainname: "",
+	})
 	sharedOS.SetPID(4507)
 
 	honeypot := &Honeypot{

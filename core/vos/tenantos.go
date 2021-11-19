@@ -56,6 +56,11 @@ func (t *TenantOS) Hostname() (string, error) {
 	return t.sharedOS.Hostname(), nil
 }
 
+// Uname implements VOS.Uname.
+func (t *TenantOS) Uname() (Utsname, error) {
+	return t.sharedOS.Uname(), nil
+}
+
 func (t *TenantOS) SetPTY(pty PTY) {
 	t.eventRecorder.Record(&logger.LogEntry_TerminalUpdate{
 		TerminalUpdate: &logger.TerminalUpdate{
