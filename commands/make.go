@@ -11,6 +11,9 @@ func Make(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "make [options] [target] ...",
 		Short: "Run a dependency graph of commands.",
+
+		// Never bail, even if args are bad.
+		NeverBail: true,
 	}
 
 	return cmd.Run(virtOS, func() int {

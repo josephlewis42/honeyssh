@@ -114,6 +114,9 @@ type SimpleCommand struct {
 	// If this is non-nil when Run() is called, then the default help flag isn't
 	// added.
 	ShowHelp *bool
+	// NeverBail skips interacting with stdout/stderr on failure and
+	// always runs the callback.
+	NeverBail bool
 
 	flags *getopt.Set
 }
@@ -146,14 +149,20 @@ func (s *SimpleCommand) Run(virtOS vos.VOS, callback func() int) int {
 		s.ShowHelp = opts.BoolLong("help", 'h', "show this help and exit")
 	}
 
-	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *s.ShowHelp {
-		if err != nil {
-			virtOS.LogInvalidInvocation(err)
-			fmt.Fprintf(virtOS.Stderr(), "error: %s\n\n", err)
-		}
+	err := opts.Getopt(virtOS.Args(), nil)
+	if err != nil {
+		virtOS.LogInvalidInvocation(err)
+	}
 
-		s.PrintHelp(virtOS.Stdout())
-		return 1
+	if !s.NeverBail {
+		if err != nil || *s.ShowHelp {
+			if err != nil {
+				fmt.Fprintf(virtOS.Stderr(), "error: %s\n\n", err)
+			}
+
+			s.PrintHelp(virtOS.Stdout())
+			return 1
+		}
 	}
 
 	return callback()

@@ -123,10 +123,23 @@ func Help(s *Shell, args []string) int {
 	return 0
 }
 
+func NopBuiltin(s *Shell, args []string) int {
+	return 0
+}
+
+func Sudo(s *Shell, args []string) int {
+	remainder := args[1:]
+	s.ExecuteProgram(s.VirtualOS.Environ(), remainder)
+	return s.lastRet
+}
+
 func init() {
 	AllBuiltins["unset"] = ShellBuiltinFunc(Unset)
 	AllBuiltins["cd"] = ShellBuiltinFunc(Cd)
 	AllBuiltins["history"] = ShellBuiltinFunc(History)
 	AllBuiltins["help"] = ShellBuiltinFunc(Help)
 	AllBuiltins["exit"] = ShellBuiltinFunc(Exit)
+	AllBuiltins["sudo"] = ShellBuiltinFunc(Sudo)
+	AllBuiltins["su"] = ShellBuiltinFunc(NopBuiltin)
+	AllBuiltins["export"] = ShellBuiltinFunc(NopBuiltin)
 }
