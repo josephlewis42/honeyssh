@@ -154,15 +154,16 @@ func (s *SimpleCommand) Run(virtOS vos.VOS, callback func() int) int {
 		virtOS.LogInvalidInvocation(err)
 	}
 
-	if !s.NeverBail {
-		if err != nil || *s.ShowHelp {
-			if err != nil {
-				fmt.Fprintf(virtOS.Stderr(), "error: %s\n\n", err)
-			}
+	if err != nil && !s.NeverBail {
+		fmt.Fprintf(virtOS.Stderr(), "error: %s\n\n", err)
 
-			s.PrintHelp(virtOS.Stdout())
-			return 1
-		}
+		s.PrintHelp(virtOS.Stdout())
+		return 1
+	}
+
+	if *s.ShowHelp {
+		s.PrintHelp(virtOS.Stdout())
+		return 0
 	}
 
 	return callback()
