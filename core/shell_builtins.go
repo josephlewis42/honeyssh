@@ -139,7 +139,11 @@ func init() {
 	AllBuiltins["history"] = ShellBuiltinFunc(History)
 	AllBuiltins["help"] = ShellBuiltinFunc(Help)
 	AllBuiltins["exit"] = ShellBuiltinFunc(Exit)
+	AllBuiltins["logout"] = ShellBuiltinFunc(Exit) // matches exit
 	AllBuiltins["sudo"] = ShellBuiltinFunc(Sudo)
+
+	// Nops
+	AllBuiltins["set"] = ShellBuiltinFunc(NopBuiltin)
 	AllBuiltins["su"] = ShellBuiltinFunc(NopBuiltin)
 	AllBuiltins["export"] = ShellBuiltinFunc(NopBuiltin)
 }
