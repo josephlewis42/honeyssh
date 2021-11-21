@@ -57,8 +57,8 @@ func New(t *tar.Reader) *Fs {
 		}
 
 		file := &File{
-			h:    hdr,
-			data: bytes.NewReader(buf.Bytes()),
+			h:    *hdr,
+			data: buf.Bytes(),
 			fs:   fs,
 		}
 		fs.files[d][f] = file
@@ -70,13 +70,13 @@ func New(t *tar.Reader) *Fs {
 	}
 	// Add a pseudoroot
 	fs.files[afero.FilePathSeparator][""] = &File{
-		h: &tar.Header{
+		h: tar.Header{
 			Name:     afero.FilePathSeparator,
 			Typeflag: tar.TypeDir,
 			Size:     0,
 		},
-		data: bytes.NewReader(nil),
 		fs:   fs,
+		data: []byte{},
 	}
 
 	return fs
@@ -93,9 +93,7 @@ func (fs *Fs) Open(name string) (afero.File, error) {
 		return nil, &os.PathError{Op: "open", Path: name, Err: syscall.ENOENT}
 	}
 
-	nf := *file
-
-	return &nf, nil
+	return file.OpenCursor(), nil
 }
 
 func (fs *Fs) Name() string { return "tarfs" }

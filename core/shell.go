@@ -217,9 +217,8 @@ func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
 		// Do nothing, always execute a found honeypot command, even if the FS says
 		// it doesn't exist.
 		execFsPath = shellPath
-
 	case shellErr == vos.ErrNotFound && execFsErr == nil:
-		// The FS found the path but the honeypot dind't.
+		// The FS found the path but the honeypot didn't.
 		shellCmd = commands.SegfaultCommand
 	case shellErr == vos.ErrNotFound || execFsErr == vos.ErrNotFound:
 		fmt.Fprintf(s.Readline, "%s: command not found\n", args[0])

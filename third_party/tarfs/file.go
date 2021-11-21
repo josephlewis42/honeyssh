@@ -12,26 +12,39 @@ import (
 )
 
 type File struct {
-	h      *tar.Header
-	data   *bytes.Reader
-	closed bool
-	fs     *Fs
+	h    tar.Header
+	data []byte
+	fs   *Fs
 }
 
-func (f *File) Close() error {
+func (f *File) OpenCursor() *FileCursor {
+	return &FileCursor{
+		File: f,
+
+		cursor: bytes.NewReader(f.data),
+		closed: false,
+	}
+}
+
+type FileCursor struct {
+	*File
+
+	cursor *bytes.Reader
+	closed bool
+}
+
+func (f *FileCursor) Close() error {
 	if f.closed {
 		return afero.ErrFileClosed
 	}
 
 	f.closed = true
-	f.h = nil
-	f.data = nil
-	f.fs = nil
+	f.cursor = nil
 
 	return nil
 }
 
-func (f *File) Read(p []byte) (n int, err error) {
+func (f *FileCursor) Read(p []byte) (n int, err error) {
 	if f.closed {
 		return 0, afero.ErrFileClosed
 	}
@@ -40,10 +53,10 @@ func (f *File) Read(p []byte) (n int, err error) {
 		return 0, syscall.EISDIR
 	}
 
-	return f.data.Read(p)
+	return f.cursor.Read(p)
 }
 
-func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
+func (f *FileCursor) ReadAt(p []byte, off int64) (n int, err error) {
 	if f.closed {
 		return 0, afero.ErrFileClosed
 	}
@@ -52,10 +65,10 @@ func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
 		return 0, syscall.EISDIR
 	}
 
-	return f.data.ReadAt(p, off)
+	return f.cursor.ReadAt(p, off)
 }
 
-func (f *File) Seek(offset int64, whence int) (int64, error) {
+func (f *FileCursor) Seek(offset int64, whence int) (int64, error) {
 	if f.closed {
 		return 0, afero.ErrFileClosed
 	}
@@ -64,18 +77,18 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 		return 0, syscall.EISDIR
 	}
 
-	return f.data.Seek(offset, whence)
+	return f.cursor.Seek(offset, whence)
 }
 
-func (f *File) Write(p []byte) (n int, err error) { return 0, syscall.EROFS }
+func (f *FileCursor) Write(p []byte) (n int, err error) { return 0, syscall.EROFS }
 
-func (f *File) WriteAt(p []byte, off int64) (n int, err error) { return 0, syscall.EROFS }
+func (f *FileCursor) WriteAt(p []byte, off int64) (n int, err error) { return 0, syscall.EROFS }
 
-func (f *File) Name() string {
+func (f *FileCursor) Name() string {
 	return filepath.Join(splitpath(f.h.Name))
 }
 
-func (f *File) getDirectoryNames() ([]string, error) {
+func (f *FileCursor) getDirectoryNames() ([]string, error) {
 	d, ok := f.fs.files[f.Name()]
 	if !ok {
 		return nil, &os.PathError{Op: "readdir", Path: f.Name(), Err: syscall.ENOENT}
@@ -90,7 +103,7 @@ func (f *File) getDirectoryNames() ([]string, error) {
 	return names, nil
 }
 
-func (f *File) Readdir(count int) ([]os.FileInfo, error) {
+func (f *FileCursor) Readdir(count int) ([]os.FileInfo, error) {
 	if f.closed {
 		return nil, afero.ErrFileClosed
 	}
@@ -121,7 +134,7 @@ func (f *File) Readdir(count int) ([]os.FileInfo, error) {
 	return fi, nil
 }
 
-func (f *File) Readdirnames(n int) ([]string, error) {
+func (f *FileCursor) Readdirnames(n int) ([]string, error) {
 	fi, err := f.Readdir(n)
 	if err != nil {
 		return nil, err
@@ -135,10 +148,10 @@ func (f *File) Readdirnames(n int) ([]string, error) {
 	return names, nil
 }
 
-func (f *File) Stat() (os.FileInfo, error) { return f.h.FileInfo(), nil }
+func (f *FileCursor) Stat() (os.FileInfo, error) { return f.h.FileInfo(), nil }
 
-func (f *File) Sync() error { return nil }
+func (f *FileCursor) Sync() error { return nil }
 
-func (f *File) Truncate(size int64) error { return syscall.EROFS }
+func (f *FileCursor) Truncate(size int64) error { return syscall.EROFS }
 
-func (f *File) WriteString(s string) (ret int, err error) { return 0, syscall.EROFS }
+func (f *FileCursor) WriteString(s string) (ret int, err error) { return 0, syscall.EROFS }
