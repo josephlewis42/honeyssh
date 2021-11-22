@@ -40,6 +40,7 @@ func Mkdir(virtOS vos.VOS) int {
 			switch {
 			case err != nil:
 				fmt.Fprintf(virtOS.Stdout(), "mkdir: cannot create directory %q: %s\n", dir, err)
+				anyFailed = true
 
 			case *verbose:
 				fmt.Fprintf(virtOS.Stdout(), "mkdir: creatred directory: %s\n", dir)
