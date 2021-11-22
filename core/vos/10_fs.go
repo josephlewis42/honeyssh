@@ -3,9 +3,10 @@ package vos
 import (
 	"archive/tar"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/third_party/cowfs"
@@ -33,17 +34,20 @@ func NewCopyOnWriteFs(tarReader *tar.Reader) VFS {
 	return ufs
 }
 
-func NewLoggingFs(base VFS, fsName string) VFS {
-	return NewPathMappingFs(base, func(op FsOp, name string) (string, error) {
-		fmt.Printf("FS %s %s(%q)\n", fsName, op, name)
-		return name, nil
-	})
-}
-
 func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error)) VFS {
 	rpos := &realpathOs{Getwd, base}
 	return NewPathMappingFs(base, func(op FsOp, name string) (string, error) {
-		return realpath.Realpath(rpos, name)
+		switch op {
+		case FsOpMkdir:
+			dir, err := realpath.Realpath(rpos, path.Dir(name))
+			// Expect at least one not exist, but we'll go as far as possible.
+			if err != nil && strings.Contains(err.Error(), "no such file or directory") {
+				return dir, err
+			}
+			return path.Join(dir, path.Base(name)), nil
+		default:
+			return realpath.Realpath(rpos, name)
+		}
 	})
 }
 

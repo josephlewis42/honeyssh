@@ -118,9 +118,9 @@ func Ls(virtOS vos.VOS) int {
 		if showDirectoryNames {
 			fmt.Fprintf(virtOS.Stdout(), "%s:\n", directory)
 		}
-		fmt.Fprintf(virtOS.Stdout(), "total %d\n", totalSize)
 
 		if *longListing {
+			fmt.Fprintf(virtOS.Stdout(), "total %d\n", totalSize)
 			tw := tabwriter.NewWriter(virtOS.Stdout(), 0, 0, 1, ' ', 0)
 			for _, f := range paths {
 				// TODO: number of hard links is better approximated by
@@ -173,7 +173,9 @@ func Ls(virtOS vos.VOS) int {
 						fmt.Fprintf(tw, color.Sprintf(Dircolor(entry), name))
 					}
 					// Add padding for alignment.
-					fmt.Fprintf(tw, strings.Repeat(" ", width))
+					if width > 0 {
+						fmt.Fprintf(tw, strings.Repeat(" ", width))
+					}
 				}
 				fmt.Fprintln(tw)
 			}
@@ -196,6 +198,10 @@ var dircolors = []LsColorTest{
 	{color: ColorBoldCyan, test: func(fi os.FileInfo) bool {
 		return fi.Mode()&fs.ModeSymlink > 0
 	}},
+	// Yellow with black background pipe, block device, char device.
+	{color: fcolor.New(fcolor.FgYellow, fcolor.BgBlack, fcolor.Bold), test: func(fi os.FileInfo) bool {
+		return fi.Mode()&(fs.ModeSymlink|fs.ModeDevice|fs.ModeNamedPipe|fs.ModeSocket|fs.ModeCharDevice) > 0
+	}},
 	// Executables are bold green.
 	{color: ColorBoldGreen, test: func(fi os.FileInfo) bool {
 		return fi.Mode().Perm()&0111 > 0
@@ -216,10 +222,6 @@ var dircolors = []LsColorTest{
 			"war": true,
 			"rar": true,
 		}[path.Ext(fi.Name())]
-	}},
-	// Yellow with black background pipe, block device, char device.
-	{color: fcolor.New(fcolor.FgYellow, fcolor.BgBlack, fcolor.Bold), test: func(fi os.FileInfo) bool {
-		return fi.Mode()&(fs.ModeSymlink|fs.ModeDevice|fs.ModeNamedPipe|fs.ModeSocket|fs.ModeCharDevice) > 0
 	}},
 }
 

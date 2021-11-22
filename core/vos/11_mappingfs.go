@@ -1,7 +1,9 @@
 package vos
 
 import (
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -139,10 +141,18 @@ func (b *PathMappingFs) Mkdir(name string, mode os.FileMode) (err error) {
 }
 
 func (b *PathMappingFs) MkdirAll(name string, mode os.FileMode) (err error) {
-	if name, err = b.Mapper(FsOpMkdir, name); err != nil {
-		return &os.PathError{Op: FsOpMkdir, Path: name, Err: err}
+	var soFar []string
+	for _, part := range strings.Split(name, "/") {
+		soFar = append(soFar, part)
+
+		err := b.Mkdir(path.Join(soFar...), mode)
+		if err == nil || err == fs.ErrExist {
+			continue
+		} else {
+			return err
+		}
 	}
-	return b.BaseFs.MkdirAll(name, mode)
+	return nil
 }
 
 func (b *PathMappingFs) Create(name string) (f afero.File, err error) {
