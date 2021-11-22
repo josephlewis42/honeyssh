@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/third_party/cowfs"
@@ -38,10 +37,10 @@ func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error
 	rpos := &realpathOs{Getwd, base}
 	return NewPathMappingFs(base, func(op FsOp, name string) (string, error) {
 		switch op {
-		case FsOpMkdir:
+		case FsOpMkdir, FsOpCreate:
 			dir, err := realpath.Realpath(rpos, path.Dir(name))
 			// Expect at least one not exist, but we'll go as far as possible.
-			if err != nil && strings.Contains(err.Error(), "no such file or directory") {
+			if err != nil && errors.Is(err, fs.ErrNotExist) {
 				return dir, err
 			}
 			return path.Join(dir, path.Base(name)), nil
