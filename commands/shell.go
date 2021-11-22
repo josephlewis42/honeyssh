@@ -16,15 +16,15 @@ import (
 )
 
 const (
-	EnvHome     = "HOME"
-	EnvPWD      = "PWD"
-	EnvPath     = "PATH"
-	EnvPrompt   = "PS1"
-	EnvHostname = "HOSTNAME"
-	EnvUser     = "USER"
-	EnvUID      = "UID"
-
-	DefaultPrompt = `\u@\h:\w\$ `
+	EnvHome            = "HOME"
+	EnvPWD             = "PWD"
+	EnvPath            = "PATH"
+	EnvPrompt          = "PS1"
+	EnvHostname        = "HOSTNAME"
+	EnvUser            = "USER"
+	EnvUID             = "UID"
+	DefaultColorPrompt = `\033[01;32m\u@\h\033[00m:\033[01;34m\w\033[00m\$ `
+	DefaultPrompt      = `\u@\h:\w\$ `
 )
 
 var (
@@ -34,21 +34,29 @@ var (
 type Shell struct {
 	VirtualOS vos.VOS
 	Readline  *readline.Instance
-	lastRet   int
-	history   []string
+
+	lastRet int
+	history []string
 
 	// Set to true to quit the shell
 	Quit bool
 }
 
 func RunShell(virtualOS vos.VOS) int {
+
 	s, err := NewShell(virtualOS)
 	if err != nil {
 		fmt.Fprintf(virtualOS.Stderr(), "sh: %s\n", err)
 		return 1
 	}
-	s.Run()
-	return 0
+
+	cmd := &SimpleCommand{
+		Use:       "sh [options] ...",
+		Short:     "Standard command interpreter for the system. Currently being changed to conform with the POSIX 1003.2 standard.",
+		NeverBail: true,
+	}
+
+	return cmd.Run(virtualOS, s.Run)
 }
 
 func NewShell(virtualOS vos.VOS) (*Shell, error) {
@@ -100,7 +108,11 @@ func (s *Shell) Init(username string) {
 	s.VirtualOS.Setenv(EnvPath, "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	host, _ := s.VirtualOS.Hostname()
 	s.VirtualOS.Setenv(EnvHostname, host)
-	s.VirtualOS.Setenv(EnvPrompt, DefaultPrompt)
+	if s.VirtualOS.GetPTY().IsPTY {
+		s.VirtualOS.Setenv(EnvPrompt, DefaultColorPrompt)
+	} else {
+		s.VirtualOS.Setenv(EnvPrompt, DefaultPrompt)
+	}
 	if wd, err := s.VirtualOS.Getwd(); err != nil {
 		s.VirtualOS.Setenv(EnvPWD, wd)
 	}
@@ -130,10 +142,10 @@ func (s *Shell) Prompt() string {
 		prompt = strings.ReplaceAll(prompt, `\$`, "$")
 	}
 
-	return prompt
+	return unescape(prompt)
 }
 
-func (s *Shell) Run() {
+func (s *Shell) Run() int {
 	for !s.Quit {
 		s.Readline.SetPrompt(s.Prompt())
 		line, err := s.Readline.Readline()
@@ -144,7 +156,7 @@ func (s *Shell) Run() {
 
 		switch {
 		case err == io.EOF:
-			return // Input closed, quit.
+			return 1 // Input closed, quit.
 
 		case err == readline.ErrInterrupt:
 			// TODO: handle interrupt, line is valid here.
@@ -204,6 +216,7 @@ func (s *Shell) Run() {
 			s.ExecuteProgramOrBuiltin(effectiveEnv, tokens)
 		}
 	}
+	return 0
 }
 
 func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
