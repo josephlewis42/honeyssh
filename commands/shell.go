@@ -1,4 +1,4 @@
-package core
+package commands
 
 import (
 	"fmt"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
-	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/vos"
 )
 
@@ -40,6 +39,16 @@ type Shell struct {
 
 	// Set to true to quit the shell
 	Quit bool
+}
+
+func RunShell(virtualOS vos.VOS) int {
+	s, err := NewShell(virtualOS)
+	if err != nil {
+		fmt.Fprintf(virtualOS.Stderr(), "sh: %s\n", err)
+		return 1
+	}
+	s.Run()
+	return 0
 }
 
 func NewShell(virtualOS vos.VOS) (*Shell, error) {
@@ -219,7 +228,7 @@ func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
 		execFsPath = shellPath
 	case shellErr == vos.ErrNotFound && execFsErr == nil:
 		// The FS found the path but the honeypot didn't.
-		shellCmd = commands.SegfaultCommand
+		shellCmd = SegfaultCommand
 	case shellErr == vos.ErrNotFound || execFsErr == vos.ErrNotFound:
 		fmt.Fprintf(s.Readline, "%s: command not found\n", args[0])
 		return
@@ -240,7 +249,7 @@ func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
 	s.lastRet = shellCmd.Main(proc)
 }
 
-func FindCommand(virtualOS vos.VOS, execPath string) (commands.HoneypotCommand, string, error) {
+func FindCommand(virtualOS vos.VOS, execPath string) (HoneypotCommand, string, error) {
 	switch {
 	case !strings.Contains(execPath, "/"):
 		// Not a fully qualified command path try under all $PATHs.
@@ -261,7 +270,7 @@ func FindCommand(virtualOS vos.VOS, execPath string) (commands.HoneypotCommand, 
 		fallthrough
 
 	default:
-		cmd, ok := commands.AllCommands[execPath]
+		cmd, ok := AllCommands[execPath]
 		if !ok {
 			return nil, "", vos.ErrNotFound
 		}
@@ -269,15 +278,6 @@ func FindCommand(virtualOS vos.VOS, execPath string) (commands.HoneypotCommand, 
 	}
 }
 
-type listCloser []io.Closer
-
-func (lc listCloser) Close() error {
-	var lastErr error
-	for _, v := range lc {
-		if err := v.Close(); err != nil {
-			lastErr = err
-		}
-	}
-
-	return lastErr
+func init() {
+	addBinCmd("sh", HoneypotCommandFunc(RunShell))
 }

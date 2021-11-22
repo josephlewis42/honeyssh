@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/commands"
-	"josephlewis.net/osshit/core"
 )
 
 // serveCmd represents the serve command
@@ -20,7 +19,7 @@ var builtinsCmd = &cobra.Command{
 			builtins = append(builtins, path)
 		}
 
-		for cmd, _ := range core.AllBuiltins {
+		for cmd, _ := range commands.AllBuiltins {
 			builtins = append(builtins, "shell:"+cmd)
 		}
 

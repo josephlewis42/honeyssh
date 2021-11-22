@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gliderlabs/ssh"
+	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/logger"
 	"josephlewis.net/osshit/core/vos"
 	"josephlewis.net/osshit/third_party/tarfs"
@@ -171,16 +172,8 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	}
 
 	// Start shell
-	fakeShell, err := NewShell(shellOS)
-	if err != nil {
-		s.Exit(1)
-		return err
-	}
-
-	// run shell
-	fakeShell.Run()
-
-	s.Exit(0)
+	retCode := commands.RunShell(shellOS)
+	s.Exit(retCode)
 	return nil
 }
 
@@ -193,4 +186,17 @@ func (h *Honeypot) ListenAndServe() error {
 func (h *Honeypot) Shutdown(ctx context.Context) error {
 	defer h.Close()
 	return h.sshServer.Shutdown(ctx)
+}
+
+type listCloser []io.Closer
+
+func (lc listCloser) Close() error {
+	var lastErr error
+	for _, v := range lc {
+		if err := v.Close(); err != nil {
+			lastErr = err
+		}
+	}
+
+	return lastErr
 }
