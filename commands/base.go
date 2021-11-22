@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
 )
@@ -167,4 +168,79 @@ func (s *SimpleCommand) Run(virtOS vos.VOS, callback func() int) int {
 	}
 
 	return callback()
+}
+
+const (
+	colorAlways = "always"
+	colorAuto   = "auto"
+	colorNever  = "never"
+)
+
+type ColorPrinter struct {
+	value  *string
+	virtOS vos.VOS
+}
+
+// Init sets up the flag and virtual OS to determine the color output.
+func (c *ColorPrinter) Init(flags *getopt.Set, virtOS vos.VOS) {
+	c.virtOS = virtOS
+	c.value = flags.EnumLong(
+		"color",
+		rune(0), // No short flag.
+		[]string{colorAlways, colorAuto, colorNever},
+		colorAuto,
+		"colorize the output (always|auto|never)")
+}
+
+func (c *ColorPrinter) ShouldColor() bool {
+	switch {
+	case *c.value == colorNever:
+		return false
+	case *c.value == colorAlways:
+		return true
+	default:
+		return c.virtOS.GetPTY().IsPTY
+	}
+}
+
+func (c *ColorPrinter) applyIfShouldColor(formatter func(string, ...interface{}) string, format string, a ...interface{}) string {
+	if c.ShouldColor() {
+		return formatter(format, a...)
+	}
+	return fmt.Sprintf(format, a...)
+}
+
+func (c *ColorPrinter) Sprintf(color *color.Color, format string, a ...interface{}) string {
+	if c.ShouldColor() {
+		return color.Sprintf(format, a...)
+	}
+	return fmt.Sprintf(format, a...)
+}
+
+func (c *ColorPrinter) BlackString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.BlackString, format, a...)
+}
+
+func (c *ColorPrinter) RedString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.RedString, format, a...)
+}
+
+func (c *ColorPrinter) GreenString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.GreenString, format, a...)
+}
+
+func (c *ColorPrinter) YellowString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.YellowString, format, a...)
+}
+
+func (c *ColorPrinter) BlueString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.BlueString, format, a...)
+}
+
+func (c *ColorPrinter) MagentaString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.MagentaString, format, a...)
+}
+
+func (c *ColorPrinter) CyanString(format string, a ...interface{}) string {
+	return c.applyIfShouldColor(color.CyanString, format, a...)
 }

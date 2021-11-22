@@ -3,14 +3,17 @@ package commands
 import (
 	"archive/tar"
 	"fmt"
+	"io/fs"
 	"math"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"syscall"
 	"text/tabwriter"
 	"time"
 
+	fcolor "github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
 )
@@ -34,6 +37,9 @@ func Ls(virtOS vos.VOS) int {
 	humanSize := opts.BoolLong("human-readable", 'h', "print human readable sizes")
 	lineWidth := opts.IntLong("width", 'w', virtOS.GetPTY().Width, "set the column width, 0 is infinite")
 	helpOpt := opts.BoolLong("help", '?', "show help and exit")
+
+	var color ColorPrinter
+	color.Init(opts, virtOS)
 
 	if err := opts.Getopt(virtOS.Args(), nil); err != nil || *helpOpt {
 		w := virtOS.Stderr()
@@ -140,7 +146,7 @@ func Ls(virtOS vos.VOS) int {
 					gid2name(gid),
 					sizeFmt(f.Size()),
 					modTime,
-					f.Name())
+					color.Sprintf(Dircolor(f), f.Name()))
 			}
 			tw.Flush()
 		} else {
@@ -153,31 +159,41 @@ func Ls(virtOS vos.VOS) int {
 			}
 
 			if maxCols == 0 || maxCols >= len(paths) {
-				// Print all with two  spaces separated.
-				fmt.Fprintln(virtOS.Stdout(), strings.Join(names, "  "))
+				// Print all with two spaces separated.
+				for i, f := range paths {
+					if i > 0 {
+						fmt.Fprintf(virtOS.Stdout(), "  ")
+					}
+					fmt.Fprintf(virtOS.Stdout(), color.Sprintf(Dircolor(f), f.Name()))
+				}
+				fmt.Fprintln(virtOS.Stdout())
 			} else {
-				cols := columnize(names, virtOS.GetPTY().Width)
-				rows := len(names) / cols
-				if len(names)%cols > 0 {
+				colWidths := columnize(names, virtOS.GetPTY().Width)
+				cols := len(colWidths)
+				rows := len(paths) / cols
+				if len(paths)%cols > 0 {
 					rows++
 				}
 
-				tw := tabwriter.NewWriter(virtOS.Stdout(), 0, 0, 2, ' ', 0)
+				tw := virtOS.Stdout()
 				for row := 0; row < rows; row++ {
-					for col := 0; col < cols; col++ {
-						index := (col * rows) + row
-						entry := ""
-						if index < len(names) {
-							entry = names[index]
-						}
+					for col, width := range colWidths {
+						// Add padding if there was a column befor this.
 						if col > 0 {
-							fmt.Fprintf(tw, "\t")
+							fmt.Fprintf(tw, "  ")
 						}
-						fmt.Fprintf(tw, entry)
+						// Find and print the file entry.
+						if index := (col * rows) + row; index < len(paths) {
+							entry := paths[index]
+							name := entry.Name()
+							width -= len(name) // Subtract off padding.
+							fmt.Fprintf(tw, color.Sprintf(Dircolor(entry), name))
+						}
+						// Add padding for alignment.
+						fmt.Fprintf(tw, strings.Repeat(" ", width))
 					}
 					fmt.Fprintln(tw)
 				}
-				tw.Flush()
 			}
 		}
 	}
@@ -185,12 +201,64 @@ func Ls(virtOS vos.VOS) int {
 	return exitCode
 }
 
-func columnize(names []string, screenWidth int) int {
+type LsColorTest struct {
+	color *fcolor.Color
+	test  func(fileInfo os.FileInfo) bool
+}
+
+// Color listing comes from: https://askubuntu.com/a/884513
+var dircolors = []LsColorTest{
+	// Directories are bold blue.
+	{color: fcolor.New(fcolor.FgBlue, fcolor.Bold), test: os.FileInfo.IsDir},
+	// Symlinks are bold cyan.
+	{color: fcolor.New(fcolor.FgCyan, fcolor.Bold), test: func(fi os.FileInfo) bool {
+		return fi.Mode()&fs.ModeSymlink > 0
+	}},
+	// Executables are bold green.
+	{color: fcolor.New(fcolor.FgGreen, fcolor.Bold), test: func(fi os.FileInfo) bool {
+		return fi.Mode().Perm()&0111 > 0
+	}},
+	// Archives are bold red.
+	{color: fcolor.New(fcolor.FgCyan, fcolor.Bold), test: func(fi os.FileInfo) bool {
+		return map[string]bool{
+			"tar": true,
+			"tgz": true,
+			"zip": true,
+			"gz":  true,
+			"bz2": true,
+			"bz":  true,
+			"tbz": true,
+			"deb": true,
+			"rpm": true,
+			"jar": true,
+			"war": true,
+			"rar": true,
+		}[path.Ext(fi.Name())]
+	}},
+	// Yellow with black background pipe, block device, char device.
+	{color: fcolor.New(fcolor.FgYellow, fcolor.BgBlack, fcolor.Bold), test: func(fi os.FileInfo) bool {
+		return fi.Mode()&(fs.ModeSymlink|fs.ModeDevice|fs.ModeNamedPipe|fs.ModeSocket|fs.ModeCharDevice) > 0
+	}},
+}
+
+func Dircolor(fileInfo os.FileInfo) *fcolor.Color {
+	for _, dc := range dircolors {
+		if dc.test(fileInfo) {
+			return dc.color
+		}
+	}
+
+	// Anything else defaults to white.
+	return fcolor.New(fcolor.FgHiWhite)
+}
+
+func columnize(names []string, screenWidth int) []int {
 	const colPadding = 2
 	// 3 is the minimum column width, 1 char filename + 2 padding.
 	columns := screenWidth / (1 + colPadding)
+	var maximums []int
 	for ; columns > 1; columns-- {
-		maximums := make([]int, columns)
+		maximums = make([]int, columns)
 		total := (columns - 1) * colPadding
 		rows := (len(names) / columns) + 1
 		for i, name := range names {
@@ -205,11 +273,11 @@ func columnize(names []string, screenWidth int) int {
 		}
 
 		if total <= screenWidth {
-			return columns
+			return maximums
 		}
 	}
 
-	return columns
+	return maximums
 }
 
 func getUIDGID(fileInfo os.FileInfo) (uid, gid int) {
