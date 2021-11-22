@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	fcolor "github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
 )
@@ -176,6 +177,13 @@ const (
 	colorNever  = "never"
 )
 
+var (
+	ColorBoldBlue  = color.New(color.FgBlue, color.Bold)
+	ColorBoldGreen = color.New(color.FgGreen, color.Bold)
+	ColorBoldCyan  = fcolor.New(color.FgCyan, color.Bold)
+	ColorBoldRed   = color.New(color.FgRed, color.Bold)
+)
+
 type ColorPrinter struct {
 	value  *string
 	virtOS vos.VOS
@@ -215,32 +223,4 @@ func (c *ColorPrinter) Sprintf(color *color.Color, format string, a ...interface
 		return color.Sprintf(format, a...)
 	}
 	return fmt.Sprintf(format, a...)
-}
-
-func (c *ColorPrinter) BlackString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.BlackString, format, a...)
-}
-
-func (c *ColorPrinter) RedString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.RedString, format, a...)
-}
-
-func (c *ColorPrinter) GreenString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.GreenString, format, a...)
-}
-
-func (c *ColorPrinter) YellowString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.YellowString, format, a...)
-}
-
-func (c *ColorPrinter) BlueString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.BlueString, format, a...)
-}
-
-func (c *ColorPrinter) MagentaString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.MagentaString, format, a...)
-}
-
-func (c *ColorPrinter) CyanString(format string, a ...interface{}) string {
-	return c.applyIfShouldColor(color.CyanString, format, a...)
 }

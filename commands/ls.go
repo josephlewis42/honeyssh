@@ -151,49 +151,31 @@ func Ls(virtOS vos.VOS) int {
 			tw.Flush()
 		} else {
 			const minPaddingWidth = 2
-			maxCols := *lineWidth / (longestNameLength + minPaddingWidth)
-
-			var names []string
-			for _, f := range paths {
-				names = append(names, f.Name())
+			colWidths := columnize(paths, *lineWidth)
+			cols := len(colWidths)
+			rows := len(paths) / cols
+			if len(paths)%cols > 0 {
+				rows++
 			}
 
-			if maxCols == 0 || maxCols >= len(paths) {
-				// Print all with two spaces separated.
-				for i, f := range paths {
-					if i > 0 {
-						fmt.Fprintf(virtOS.Stdout(), "  ")
+			tw := virtOS.Stdout()
+			for row := 0; row < rows; row++ {
+				for col, width := range colWidths {
+					// Add padding if there was a column befor this.
+					if col > 0 {
+						fmt.Fprintf(tw, "  ")
 					}
-					fmt.Fprintf(virtOS.Stdout(), color.Sprintf(Dircolor(f), f.Name()))
-				}
-				fmt.Fprintln(virtOS.Stdout())
-			} else {
-				colWidths := columnize(names, virtOS.GetPTY().Width)
-				cols := len(colWidths)
-				rows := len(paths) / cols
-				if len(paths)%cols > 0 {
-					rows++
-				}
-
-				tw := virtOS.Stdout()
-				for row := 0; row < rows; row++ {
-					for col, width := range colWidths {
-						// Add padding if there was a column befor this.
-						if col > 0 {
-							fmt.Fprintf(tw, "  ")
-						}
-						// Find and print the file entry.
-						if index := (col * rows) + row; index < len(paths) {
-							entry := paths[index]
-							name := entry.Name()
-							width -= len(name) // Subtract off padding.
-							fmt.Fprintf(tw, color.Sprintf(Dircolor(entry), name))
-						}
-						// Add padding for alignment.
-						fmt.Fprintf(tw, strings.Repeat(" ", width))
+					// Find and print the file entry.
+					if index := (col * rows) + row; index < len(paths) {
+						entry := paths[index]
+						name := entry.Name()
+						width -= len(name) // Subtract off padding.
+						fmt.Fprintf(tw, color.Sprintf(Dircolor(entry), name))
 					}
-					fmt.Fprintln(tw)
+					// Add padding for alignment.
+					fmt.Fprintf(tw, strings.Repeat(" ", width))
 				}
+				fmt.Fprintln(tw)
 			}
 		}
 	}
@@ -209,17 +191,17 @@ type LsColorTest struct {
 // Color listing comes from: https://askubuntu.com/a/884513
 var dircolors = []LsColorTest{
 	// Directories are bold blue.
-	{color: fcolor.New(fcolor.FgBlue, fcolor.Bold), test: os.FileInfo.IsDir},
+	{color: ColorBoldBlue, test: os.FileInfo.IsDir},
 	// Symlinks are bold cyan.
-	{color: fcolor.New(fcolor.FgCyan, fcolor.Bold), test: func(fi os.FileInfo) bool {
+	{color: ColorBoldCyan, test: func(fi os.FileInfo) bool {
 		return fi.Mode()&fs.ModeSymlink > 0
 	}},
 	// Executables are bold green.
-	{color: fcolor.New(fcolor.FgGreen, fcolor.Bold), test: func(fi os.FileInfo) bool {
+	{color: ColorBoldGreen, test: func(fi os.FileInfo) bool {
 		return fi.Mode().Perm()&0111 > 0
 	}},
 	// Archives are bold red.
-	{color: fcolor.New(fcolor.FgCyan, fcolor.Bold), test: func(fi os.FileInfo) bool {
+	{color: ColorBoldRed, test: func(fi os.FileInfo) bool {
 		return map[string]bool{
 			"tar": true,
 			"tgz": true,
@@ -252,18 +234,28 @@ func Dircolor(fileInfo os.FileInfo) *fcolor.Color {
 	return fcolor.New(fcolor.FgHiWhite)
 }
 
-func columnize(names []string, screenWidth int) []int {
+func columnize(paths []fs.FileInfo, screenWidth int) []int {
 	const colPadding = 2
+
+	numFiles := len(paths)
+	// Size of the display of the file name, actual length may vary if there are
+	// escape sequences to format it.
+	displayLengths := make([]int, len(paths))
+	for i, p := range paths {
+		displayLengths[i] = len(p.Name())
+	}
+
+	// Start with maximum number of columns and work down until all the data fits.
 	// 3 is the minimum column width, 1 char filename + 2 padding.
 	columns := screenWidth / (1 + colPadding)
-	var maximums []int
+	var maximums []int // Holds maximum size of a name in the column.
 	for ; columns > 1; columns-- {
 		maximums = make([]int, columns)
 		total := (columns - 1) * colPadding
-		rows := (len(names) / columns) + 1
-		for i, name := range names {
+		rows := (numFiles / columns) + 1
+		for i, nameLen := range displayLengths {
 			prevMax := maximums[i/rows]
-			if nameLen := len(name); nameLen > prevMax {
+			if nameLen > prevMax {
 				maximums[i/rows] = nameLen
 				total = total - prevMax + nameLen
 				if total > screenWidth {
