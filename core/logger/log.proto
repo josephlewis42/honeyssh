@@ -24,6 +24,7 @@ message LogEntry {
     TerminalUpdate terminal_update = 21;
     OpenFile open_file = 22;
     InvalidInvocation invalid_invocation = 23;
+    Credentials used_credentials = 24;
   };
 }
 
@@ -114,4 +115,14 @@ message OpenFile {
 message InvalidInvocation {
   repeated string command = 1;
   string error = 2;
+}
+
+// A set of credentials that the honeypot collected.
+message Credentials {
+  // Username used to authenticate.
+  string username = 1;
+  // Password used to authenticate.
+  string password = 2;
+  // Private key used to authenticate.
+  bytes private_key = 3;
 }

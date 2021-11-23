@@ -4,6 +4,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"josephlewis.net/osshit/core/logger"
 )
 
 // Utsname mimics POSIX sys/utsname.h
@@ -63,6 +65,9 @@ type Honeypot interface {
 	// Log an invalid command invocation, it may indicate a missing honeypot
 	// feature.
 	LogInvalidInvocation(err error)
+
+	// Record when credentials are used by the attacker.
+	LogCreds(*logger.Credentials)
 }
 
 // /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}.

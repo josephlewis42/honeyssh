@@ -113,10 +113,20 @@ func (t *TenantOS) SSHRemoteAddr() net.Addr {
 	return t.remoteAddr
 }
 
+// SSHStdout is a direct connection to the SSH stdout stream.
+// Useful for broadcasting messages.
 func (t *TenantOS) SSHStdout() io.Writer {
 	return t.sshStdout
 }
 
+// SSHExit hangs up the incoming SSH connection.
 func (t *TenantOS) SSHExit(code int) error {
 	return t.sshExit(code)
+}
+
+// LogCreds records credentials that the attacker used.
+func (t *TenantOS) LogCreds(creds *logger.Credentials) {
+	t.eventRecorder.Record(&logger.LogEntry_UsedCredentials{
+		UsedCredentials: creds,
+	})
 }
