@@ -7,12 +7,20 @@ import (
 	"github.com/spf13/afero"
 )
 
-func NewSharedOS(baseFS VFS, utsname Utsname) *SharedOS {
+// ProcessFunc is a "process" that can be run.
+type ProcessFunc func(VOS) int
+
+// ProcessResolver looks up a fake process by path, it reuturns nil if
+// no process was found.
+type ProcessResolver func(path string) ProcessFunc
+
+func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver) *SharedOS {
 	return &SharedOS{
-		mockFS:      baseFS,
-		mockUtsname: utsname,
-		mockPID:     0,
-		bootTime:    time.Now(),
+		mockFS:          baseFS,
+		mockUtsname:     utsname,
+		mockPID:         0,
+		bootTime:        time.Now(),
+		processResolver: procResolver,
 	}
 }
 
@@ -32,6 +40,9 @@ type SharedOS struct {
 
 	// The time the system booted.
 	bootTime time.Time
+
+	// The resolver for processes.
+	processResolver ProcessResolver
 }
 
 func (s *SharedOS) Hostname() string {

@@ -89,6 +89,9 @@ func (t *TenantOS) InitProc() *TenantProcOS {
 		PID:            0,
 		UID:            0,
 		Dir:            "/",
+		Exec: func(_ VOS) int {
+			return 0
+		},
 	}
 }
 

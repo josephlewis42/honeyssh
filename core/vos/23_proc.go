@@ -1,6 +1,7 @@
 package vos
 
 import (
+	"errors"
 	"io"
 	"io/fs"
 	"os/exec"
@@ -13,7 +14,10 @@ var ErrNotFound = exec.ErrNotFound
 
 func findExecutable(vos VOS, file string) error {
 	d, err := vos.Stat(file)
-	if err != nil {
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return ErrNotFound
+	case err != nil:
 		return err
 	}
 	if m := d.Mode(); !m.IsDir() && m&0111 != 0 {
@@ -66,6 +70,10 @@ type VProc interface {
 
 	// Chdir changes the directory.
 	Chdir(dir string) error
+
+	// Run executes the command, waits for it to finish and returns the status
+	// code.
+	Run() int
 }
 
 // Cmd is similar to go's os/exec.Cmd.

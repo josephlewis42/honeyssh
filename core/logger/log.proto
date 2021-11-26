@@ -69,10 +69,8 @@ message ConnectionLost {
 message RunCommand {
   // Shell parsed command string.
   repeated string command = 1;
-  // Raw command that the shell parsed.
-  string raw_command = 2;
   // Environment variables in key=value format.
-  repeated string environment_variables = 3;
+  repeated string environment_variables = 2;
   // Path to the resolved command.
   string resolved_command_path = 4;
 }
@@ -81,18 +79,15 @@ message UnknownCommand {
   enum UnknownCommandStatus {
     UNKNOWN = 0;
     NOT_FOUND = 1; // Not found in $PATH.
-    NOT_EXECUTABLE = 2; // File in $PATH, but missing the executable bit.
-    NOT_IMPLEMENTED = 3; // Executable found, but not implemented.
+    NOT_IMPLEMENTED = 2; // Executable found, but not implemented.
   }
 
   // Shell parsed command string.
   repeated string command = 1;
-  // Raw command that the shell parsed.
-  string raw_command = 2;
-  // Environment variables in key=value format.
-  repeated string environment_variables = 3;
   // The reason the command was unknown.
-  UnknownCommandStatus status = 4;
+  UnknownCommandStatus status = 2;
+  // Any associated error message.
+  string error_message = 3;
 }
 
 message TerminalUpdate {

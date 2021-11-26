@@ -1,9 +1,12 @@
 package vos
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"josephlewis.net/osshit/core/logger"
 )
@@ -27,6 +30,8 @@ type TenantProcOS struct {
 	UID int
 	// Dir specifies the working directory of the command.
 	Dir string
+	// Exec is the process executable that is run when the process starts.
+	Exec ProcessFunc
 }
 
 var _ VOS = (*TenantProcOS)(nil)
@@ -75,6 +80,13 @@ func (ea *TenantProcOS) Chdir(dir string) (err error) {
 		ea.Dir = dir
 		return nil
 	}
+}
+
+func (ea *TenantProcOS) Run() int {
+	if ea.Exec == nil {
+		return 1
+	}
+	return ea.Exec(ea)
 }
 
 type ProcAttr struct {
@@ -139,6 +151,57 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 		}
 	}
 
+	// Set up exec
+	shellCmd, shellPath, shellErr := ea.findHoneypotCommand(out.ExecutablePath)
+	execFsPath, execFsErr := LookPath(ea, out.ExecutablePath)
+
+	switch {
+	case shellErr == nil && execFsErr == nil:
+		// Command found everywhere.
+		out.Exec = shellCmd
+		out.ExecutablePath = execFsPath
+
+	case shellErr == nil && errors.Is(execFsErr, ErrNotFound):
+		// Honeypot command found, but FS didn't have it. Run command anyway.
+		out.Exec = shellCmd
+		out.ExecutablePath = shellPath
+	case errors.Is(shellErr, ErrNotFound) && execFsErr == nil:
+		// The FS found the path but the honeypot didn't, fake a segfault
+		out.Exec = segfault
+		out.ExecutablePath = execFsPath
+
+		ea.TenantOS.eventRecorder.Record(&logger.LogEntry_UnknownCommand{
+			UnknownCommand: &logger.UnknownCommand{
+				Command: ea.Args(),
+				Status:  logger.UnknownCommand_NOT_IMPLEMENTED,
+			},
+		})
+	case errors.Is(execFsErr, ErrNotFound):
+		ea.TenantOS.eventRecorder.Record(&logger.LogEntry_UnknownCommand{
+			UnknownCommand: &logger.UnknownCommand{
+				Command: argv,
+				Status:  logger.UnknownCommand_NOT_FOUND,
+			},
+		})
+		return nil, fmt.Errorf("%s: command not found", out.ExecutablePath)
+	default:
+		ea.TenantOS.eventRecorder.Record(&logger.LogEntry_UnknownCommand{
+			UnknownCommand: &logger.UnknownCommand{
+				Command:      argv,
+				ErrorMessage: fmt.Sprintf("honeypot err: %v FS err: %v", shellErr, execFsErr),
+			},
+		})
+		return nil, fmt.Errorf("%s: permission denied", out.ExecutablePath)
+	}
+
+	ea.TenantOS.eventRecorder.Record(&logger.LogEntry_RunCommand{
+		RunCommand: &logger.RunCommand{
+			Command:              argv,
+			EnvironmentVariables: env.Environ(),
+			ResolvedCommandPath:  out.ExecutablePath,
+		},
+	})
+
 	return out, nil
 }
 
@@ -150,3 +213,37 @@ func (ea *TenantProcOS) LogInvalidInvocation(err error) {
 		},
 	})
 }
+
+func (ea *TenantProcOS) findHoneypotCommand(execPath string) (ProcessFunc, string, error) {
+	switch {
+	case !strings.Contains(execPath, "/"):
+		// Not a fully qualified command path try under all $PATHs.
+		for _, searchPath := range filepath.SplitList(ea.Getenv("PATH")) {
+			if cmd, resPath, err := ea.findHoneypotCommand(path.Join(searchPath, execPath)); err == nil {
+				return cmd, resPath, nil
+			}
+		}
+		return nil, "", ErrNotFound
+
+	case !path.IsAbs(execPath):
+		// Not an absolute path, try again based on PWD
+		execPath = path.Clean(path.Join(ea.Dir, execPath))
+		fallthrough
+
+	default:
+		cmd := ea.TenantOS.sharedOS.processResolver(execPath)
+		if cmd == nil {
+			return nil, "", ErrNotFound
+		}
+		return cmd, execPath, nil
+	}
+}
+
+func segfault(virtOS VOS) int {
+	name := virtOS.Args()[0]
+	fmt.Fprintf(virtOS.Stdout(), "%s: Segmentation fault\n", name)
+
+	return 1
+}
+
+var _ ProcessFunc = segfault

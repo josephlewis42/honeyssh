@@ -60,6 +60,8 @@ func NewHoneypot(configuration *Configuration, stderr io.Writer) (*Honeypot, err
 		Version:    "#151-Ubuntu SMP",
 		Machine:    "x86_64",
 		Domainname: "",
+	}, func(processPath string) vos.ProcessFunc {
+		return commands.AllCommands[processPath]
 	})
 	sharedOS.SetPID(4507)
 
@@ -172,8 +174,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	}
 
 	// Start shell
-	retCode := commands.RunShell(shellOS)
-	s.Exit(retCode)
+	s.Exit(shellOS.Run())
 	return nil
 }
 

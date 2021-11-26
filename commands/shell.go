@@ -5,8 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -230,65 +228,16 @@ func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
 }
 
 func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
-
-	shellCmd, shellPath, shellErr := FindCommand(s.VirtualOS, args[0])
-	execFsPath, execFsErr := vos.LookPath(s.VirtualOS, args[0])
-
-	switch {
-	case shellErr == nil && execFsErr == vos.ErrNotFound:
-		// Do nothing, always execute a found honeypot command, even if the FS says
-		// it doesn't exist.
-		execFsPath = shellPath
-	case shellErr == vos.ErrNotFound && execFsErr == nil:
-		// The FS found the path but the honeypot didn't.
-		shellCmd = SegfaultCommand
-	case shellErr == vos.ErrNotFound || execFsErr == vos.ErrNotFound:
-		fmt.Fprintf(s.Readline, "%s: command not found\n", args[0])
-		return
-	case shellErr != nil || execFsErr != nil:
-		fmt.Fprintf(s.Readline, "%s: permission denied\n", args[0])
-		return
-	}
-
-	// TODO log execution
-	proc, err := s.VirtualOS.StartProcess(execFsPath, args, &vos.ProcAttr{
+	proc, err := s.VirtualOS.StartProcess(args[0], args, &vos.ProcAttr{
 		Env:   cmdEnv,
 		Files: s.VirtualOS,
 	})
 	if err != nil {
-		fmt.Fprintf(s.Readline, "%s: %s\n", args[0], err)
+		fmt.Fprintf(s.Readline, "sh: %s\n", err)
+		return
 	}
 
-	s.lastRet = shellCmd.Main(proc)
-}
-
-func FindCommand(virtualOS vos.VOS, execPath string) (HoneypotCommand, string, error) {
-	switch {
-	case !strings.Contains(execPath, "/"):
-		// Not a fully qualified command path try under all $PATHs.
-		for _, searchPath := range filepath.SplitList(virtualOS.Getenv("PATH")) {
-			if cmd, resPath, err := FindCommand(virtualOS, path.Join(searchPath, execPath)); err == nil {
-				return cmd, resPath, nil
-			}
-		}
-		return nil, "", vos.ErrNotFound
-
-	case !path.IsAbs(execPath):
-		// Not an absolute path, try again., try again.
-		wd, err := virtualOS.Getwd()
-		if err != nil {
-			return nil, "", err
-		}
-		execPath = path.Clean(path.Join(wd, execPath))
-		fallthrough
-
-	default:
-		cmd, ok := AllCommands[execPath]
-		if !ok {
-			return nil, "", vos.ErrNotFound
-		}
-		return cmd, execPath, nil
-	}
+	s.lastRet = proc.Run()
 }
 
 func init() {
