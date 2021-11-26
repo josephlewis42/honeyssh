@@ -89,13 +89,8 @@ func (f *FileCursor) Name() string {
 }
 
 func (f *FileCursor) getDirectoryNames() ([]string, error) {
-	d, ok := f.fs.files[f.Name()]
-	if !ok {
-		return nil, &os.PathError{Op: "readdir", Path: f.Name(), Err: syscall.ENOENT}
-	}
-
 	var names []string
-	for n := range d {
+	for n := range f.fs.files[f.Name()] {
 		names = append(names, n)
 	}
 	sort.Strings(names)

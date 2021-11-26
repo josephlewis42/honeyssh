@@ -6,3 +6,4 @@ Adapted to:
 
 * Include link support.
 * Allow reading files multiple times.
+* Not breaking on empty directories.
