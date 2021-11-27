@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"log"
 	"os"
 	"os/signal"
@@ -10,11 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core"
+	"josephlewis.net/osshit/core/config"
 )
 
-var (
-	config = core.DefaultConfig()
-)
+var ()
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -27,16 +28,17 @@ var serveCmd = &cobra.Command{
 
 		log.Println("Starting logger...")
 		logDest := cmd.ErrOrStderr()
-		if config.LogPath != "" {
-			f, err := os.OpenFile(config.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			logDest = f
+
+		configuration, err := config.Load(cfgPath)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			log.Println("Couldn't load config: did you run init?")
+			fallthrough
+		case err != nil:
+			return err
 		}
 
-		honeypot, err := core.NewHoneypot(config, logDest)
+		honeypot, err := core.NewHoneypot(configuration, logDest)
 		if err != nil {
 			return err
 		}
@@ -67,9 +69,4 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-
-	serveCmd.Flags().StringVar(&config.HostKeyPath, "host-key", "", "Key for the server, random if unspecified.")
-	serveCmd.Flags().IntVar(&config.SSHPort, "port", 2222, "Port to open the honeypot on.")
-	serveCmd.Flags().StringVar(&config.RootFsTarPath, "root-fs", "", "Tar file to use as the root filesystem, empty if unspecified.")
-	serveCmd.Flags().StringVar(&config.LogPath, "log-path", "", "Path to use as a log file. Stderr if unspecified.")
 }

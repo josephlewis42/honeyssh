@@ -13,4 +13,5 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1
 	google.golang.org/protobuf v1.26.0
+	sigs.k8s.io/yaml v1.3.0
 )

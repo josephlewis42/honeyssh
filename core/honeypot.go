@@ -13,6 +13,7 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	"josephlewis.net/osshit/commands"
+	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/core/logger"
 	"josephlewis.net/osshit/core/vos"
 	"josephlewis.net/osshit/third_party/tarfs"
@@ -31,20 +32,20 @@ var (
 )
 
 type Honeypot struct {
-	configuration *Configuration
+	configuration *config.Configuration
 	sharedOS      *vos.SharedOS
 	toClose       listCloser
 	logger        *logger.Logger
 	sshServer     *ssh.Server
 }
 
-func NewHoneypot(configuration *Configuration, stderr io.Writer) (*Honeypot, error) {
+func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeypot, error) {
 	var toClose listCloser
 
 	// Set up the filesystem.
 	vfs := vos.NewNopFs()
-	if configuration.RootFsTarPath != "" {
-		fd, err := os.Open(configuration.RootFsTarPath)
+	if configuration.RootFsTarPath() != "" {
+		fd, err := os.Open(configuration.RootFsTarPath())
 		if err != nil {
 			toClose.Close()
 			return nil, err
@@ -87,7 +88,7 @@ func NewHoneypot(configuration *Configuration, stderr io.Writer) (*Honeypot, err
 		},
 	}
 
-	if keyPath := configuration.HostKeyPath; keyPath != "" {
+	if keyPath := configuration.HostKeyPath(); keyPath != "" {
 		honeypot.sshServer.SetOption(ssh.HostKeyFile(keyPath))
 	}
 
