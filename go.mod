@@ -1,6 +1,6 @@
 module josephlewis.net/osshit
 
-go 1.16
+go 1.17
 
 require (
 	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db
@@ -11,7 +11,24 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.8.1
 	google.golang.org/protobuf v1.26.0
 	sigs.k8s.io/yaml v1.3.0
+)
+
+require (
+	github.com/containerd/stargz-snapshotter/estargz v0.7.0 // indirect
+	github.com/golang/snappy v0.0.3 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/klauspost/compress v1.13.0 // indirect
+	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/text v0.3.6 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

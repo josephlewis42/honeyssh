@@ -3,6 +3,7 @@ package vos
 import (
 	"io"
 	"net"
+	"path/filepath"
 	"time"
 
 	"github.com/gliderlabs/ssh"
@@ -132,4 +133,19 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 	t.eventRecorder.Record(&logger.LogEntry_UsedCredentials{
 		UsedCredentials: creds,
 	})
+}
+
+func (t *TenantOS) DownloadPath(source string) string {
+	dir := t.sharedOS.config.DownloadPath()
+	base := time.Now().Format(time.RFC3339Nano)
+	downloadPath := filepath.Join(dir, base)
+
+	t.eventRecorder.Record(&logger.LogEntry_Download{
+		Download: &logger.Download{
+			Name:   downloadPath,
+			Source: source,
+		},
+	})
+
+	return downloadPath
 }

@@ -25,6 +25,7 @@ message LogEntry {
     OpenFile open_file = 22;
     InvalidInvocation invalid_invocation = 23;
     Credentials used_credentials = 24;
+    Download download = 25;
   };
 }
 
@@ -120,4 +121,12 @@ message Credentials {
   string password = 2;
   // Private key used to authenticate.
   bytes private_key = 3;
+}
+
+// Information about a downloaded file.
+message Download {
+  // Name of the download.
+  string name = 1;
+  // Source of the download.
+  string source = 2;
 }

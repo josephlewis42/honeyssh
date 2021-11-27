@@ -68,6 +68,10 @@ type Honeypot interface {
 
 	// Record when credentials are used by the attacker.
 	LogCreds(*logger.Credentials)
+
+	// Get a unique path in the downloads folder that the session can write a
+	// file to.
+	DownloadPath(source string) string
 }
 
 // /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}.

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
+	"josephlewis.net/osshit/core/config"
 )
 
 // ProcessFunc is a "process" that can be run.
@@ -14,13 +15,14 @@ type ProcessFunc func(VOS) int
 // no process was found.
 type ProcessResolver func(path string) ProcessFunc
 
-func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver) *SharedOS {
+func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver, config *config.Configuration) *SharedOS {
 	return &SharedOS{
 		mockFS:          baseFS,
 		mockUtsname:     utsname,
 		mockPID:         0,
 		bootTime:        time.Now(),
 		processResolver: procResolver,
+		config:          config,
 	}
 }
 
@@ -31,18 +33,16 @@ func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver) *Sha
 type SharedOS struct {
 	// mockFS holds the base filesystem that is shared between ALL programs.
 	mockFS VFS
-
 	// mockUtsname holds the displayed OS info including hostname.
 	mockUtsname Utsname
-
 	// mockPID contains the next PID of the system.
 	mockPID int32
-
 	// The time the system booted.
 	bootTime time.Time
-
 	// The resolver for processes.
 	processResolver ProcessResolver
+	// The user supplied configuration
+	config *config.Configuration
 }
 
 func (s *SharedOS) Hostname() string {
