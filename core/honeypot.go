@@ -118,7 +118,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	})
 
 	// Set up I/O and loging.
-	logsDir := filepath.Join(".", "logs")
+	logsDir := h.configuration.LogPath()
 	os.MkdirAll(logsDir, 0700)
 	logFileName := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339))
 	sessionLogger.Record(&logger.LogEntry_OpenTtyLog{

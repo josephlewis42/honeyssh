@@ -12,4 +12,4 @@ test:
 
 .PHONY: run
 run: build
-	./osshit serve  --host-key ~/.ssh/id_rsa --root-fs fs.tar
+	./osshit serve  --config honeycfg
