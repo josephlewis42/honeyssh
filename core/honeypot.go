@@ -98,7 +98,17 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		},
 		PasswordHandler: func(ctx ssh.Context, password string) bool {
 			ctx.SetValue(ContextAuthPassword, password)
-			successfulLogin := 0 == subtle.ConstantTimeCompare([]byte(password), []byte("password"))
+
+			var successfulLogin bool
+			passwords, err := configuration.GetPasswords(ctx.User())
+			if err != nil {
+				log.Print("error loading passwords:", err)
+			}
+			for _, allowedPass := range passwords {
+				if 0 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
+					successfulLogin = true
+				}
+			}
 
 			// Log the login
 			if !successfulLogin {
