@@ -46,6 +46,11 @@ func (l *Logger) NewSession() *SessionLogger {
 	return &SessionLogger{Logger: l, sessionID: fmt.Sprintf("%d", rand.Uint64())}
 }
 
+// NewSession creates a logger with attached session ID.
+func (l *Logger) Sessionless() *SessionLogger {
+	return &SessionLogger{Logger: l, sessionID: ""}
+}
+
 // SessionLogger logs messages with a shared session ID.
 type SessionLogger struct {
 	*Logger

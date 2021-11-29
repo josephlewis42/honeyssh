@@ -10,9 +10,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/gliderlabs/ssh"
+	gossh "golang.org/x/crypto/ssh"
 	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/core/logger"
@@ -96,7 +98,34 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		},
 		PasswordHandler: func(ctx ssh.Context, password string) bool {
 			ctx.SetValue(ContextAuthPassword, password)
-			return 0 == subtle.ConstantTimeCompare([]byte(password), []byte("password"))
+			successfulLogin := 0 == subtle.ConstantTimeCompare([]byte(password), []byte("password"))
+
+			// Log the login
+			if !successfulLogin {
+				honeypot.logger.Sessionless().Record(&logger.LogEntry_LoginAttempt{
+					LoginAttempt: &logger.LoginAttempt{
+						Result:     logger.OperationResult_FAILURE,
+						Username:   ctx.User(),
+						PublicKey:  ctx.Value(ContextAuthPublicKey).([]byte),
+						Password:   fmt.Sprintf("%s", password),
+						RemoteAddr: fmt.Sprintf("%s", ctx.RemoteAddr()),
+					},
+				})
+			}
+
+			return successfulLogin
+		},
+
+		ServerConfigCallback: func(ctx ssh.Context) *gossh.ServerConfig {
+			config := &gossh.ServerConfig{}
+			config.BannerCallback = func(_ gossh.ConnMetadata) string {
+				if configuration.SSHBanner != "" {
+					return strings.TrimRight(configuration.SSHBanner, "\n") + "\n"
+				}
+				return ""
+			}
+
+			return config
 		},
 	}
 

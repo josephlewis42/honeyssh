@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	mathrand "math/rand"
+	"math/rand"
 	"os"
+	"sync"
+	"time"
 
 	"sigs.k8s.io/yaml"
 )
@@ -88,11 +90,15 @@ func exists(path string) bool {
 	return err == nil
 }
 
-type insecureRandomReader struct{}
+type insecureRandomReader struct {
+	once sync.Once
+	rand *rand.Rand
+}
 
-func (insecureRandomReader) Read(bytes []byte) (int, error) {
-	for i := range bytes {
-		bytes[i] = byte(mathrand.Int())
-	}
-	return len(bytes), nil
+func (irr *insecureRandomReader) Read(bytes []byte) (int, error) {
+	irr.once.Do(func() {
+		irr.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	})
+
+	return irr.rand.Read(bytes)
 }

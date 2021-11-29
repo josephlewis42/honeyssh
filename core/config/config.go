@@ -8,9 +8,10 @@ const ConfigurationName = "config.yaml"
 type Configuration struct {
 	configurationDir string
 
-	Motd     string `json:"motd"`
-	SSHPort  int    `json:"ssh_port"`
-	Hostname string `json:"hostname"`
+	Motd      string `json:"motd"`
+	SSHPort   int    `json:"ssh_port"`
+	Hostname  string `json:"hostname"`
+	SSHBanner string `json:"ssh_banner"`
 }
 
 func (c *Configuration) ConfigurationPath() string {
@@ -34,7 +35,7 @@ func (c *Configuration) AppLogPath() string {
 
 // PasswordsPath holds the path to the list of passwords that will be accepted.
 func (c *Configuration) PasswordsPath() string {
-	return filepath.Join(c.configurationDir, "passwords.lst")
+	return filepath.Join(c.configurationDir, "passwords.yaml")
 }
 
 // HostKeyPath holds the path to the host keys.
