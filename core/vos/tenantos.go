@@ -142,10 +142,14 @@ func (t *TenantOS) DownloadPath(source string) string {
 
 	t.eventRecorder.Record(&logger.LogEntry_Download{
 		Download: &logger.Download{
-			Name:   downloadPath,
+			Name:   base,
 			Source: source,
 		},
 	})
 
 	return downloadPath
+}
+
+func (t *TenantOS) Now() time.Time {
+	return time.Now()
 }

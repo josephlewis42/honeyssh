@@ -31,6 +31,9 @@ github.com/google/go-containerregistry/pkg/v1/types
 # github.com/inconshreveable/mousetrap v1.0.0
 ## explicit
 github.com/inconshreveable/mousetrap
+# github.com/juju/ratelimit v1.0.1
+## explicit
+github.com/juju/ratelimit
 # github.com/klauspost/compress v1.13.0
 ## explicit; go 1.13
 github.com/klauspost/compress/fse

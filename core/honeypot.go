@@ -63,7 +63,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		Domainname: "",
 	}, func(processPath string) vos.ProcessFunc {
 		return commands.AllCommands[processPath]
-	})
+	}, configuration)
 	sharedOS.SetPID(4507)
 
 	honeypot := &Honeypot{

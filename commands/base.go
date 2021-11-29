@@ -159,6 +159,25 @@ func (s *SimpleCommand) Run(virtOS vos.VOS, callback func() int) int {
 	return callback()
 }
 
+// RunEachArg runs the callback for every supplied arg.
+func (s *SimpleCommand) RunEachArg(virtOS vos.VOS, callback func(string) error) int {
+	return s.Run(virtOS, func() int {
+		anyErrored := false
+
+		for _, arg := range s.Flags().Args() {
+			if err := callback(arg); err != nil {
+				fmt.Fprintf(virtOS.Stderr(), "%s: %s\n", s.Flags().Program(), err.Error())
+				anyErrored = true
+			}
+		}
+
+		if anyErrored {
+			return 1
+		}
+		return 0
+	})
+}
+
 const (
 	colorAlways = "always"
 	colorAuto   = "auto"

@@ -23,6 +23,7 @@ var serveCmd = &cobra.Command{
 	Short: "Start the honeypot on a local port.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		os.Stdin.Close()
 		cmd.SilenceUsage = true
 		log.Println("Initializing server...")
 

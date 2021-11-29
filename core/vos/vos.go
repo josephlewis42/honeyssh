@@ -72,6 +72,8 @@ type Honeypot interface {
 	// Get a unique path in the downloads folder that the session can write a
 	// file to.
 	DownloadPath(source string) string
-}
 
+	// Now is the current honeypot time.
+	Now() time.Time
+}
 // /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}.

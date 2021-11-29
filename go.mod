@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/google/go-containerregistry v0.6.0
+	github.com/juju/ratelimit v1.0.1
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
