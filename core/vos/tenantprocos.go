@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"josephlewis.net/osshit/core/logger"
@@ -82,7 +83,23 @@ func (ea *TenantProcOS) Chdir(dir string) (err error) {
 	}
 }
 
-func (ea *TenantProcOS) Run() int {
+func (ea *TenantProcOS) Run() (resultCode int) {
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic
+			ea.TenantOS.eventRecorder.Record(&logger.LogEntry_Panic{
+				Panic: &logger.Panic{
+					Context:    fmt.Sprintf("Running %q got panic: %v", ea.ExecutablePath, r),
+					Stacktrace: string(debug.Stack()),
+				},
+			})
+
+			// Make it look like a crash to the user.
+			fmt.Fprintf(ea.Stderr(), "%s: Segmentation fault\n", ea.ExecutablePath)
+			resultCode = 2
+		}
+	}()
+
 	if ea.Exec == nil {
 		return 1
 	}

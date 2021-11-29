@@ -8,7 +8,7 @@ build:
 
 .PHONY: test
 test:
-	go test ./...
+	go test -cover ./...
 
 .PHONY: run
 run: build

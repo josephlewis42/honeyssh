@@ -26,6 +26,7 @@ message LogEntry {
     InvalidInvocation invalid_invocation = 23;
     Credentials used_credentials = 24;
     Download download = 25;
+    Panic panic = 26;
   };
 }
 
@@ -129,4 +130,12 @@ message Download {
   string name = 1;
   // Source of the download.
   string source = 2;
+}
+
+// Information about a panic.
+message Panic {
+  // Context about what was going on before the panic.
+  string context = 1;
+  // Stacktrace of the panic.
+  string stacktrace = 2;
 }

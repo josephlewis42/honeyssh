@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"github.com/gliderlabs/ssh"
@@ -101,6 +102,19 @@ func (h *Honeypot) Close() error {
 
 func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	sessionLogger := h.logger.NewSession()
+
+	// Log panics to prevent a single connection from bringing down the whole
+	// process.
+	defer func() {
+		if r := recover(); r != nil {
+			sessionLogger.Record(&logger.LogEntry_Panic{
+				Panic: &logger.Panic{
+					Context:    fmt.Sprintf("Handling connection got panic: %v", r),
+					Stacktrace: string(debug.Stack()),
+				},
+			})
+		}
+	}()
 
 	// Log the login
 	sessionLogger.Record(&logger.LogEntry_LoginAttempt{
