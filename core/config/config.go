@@ -32,6 +32,11 @@ func (c *Configuration) AppLogPath() string {
 	return filepath.Join(c.configurationDir, "app.log")
 }
 
+// PasswordsPath holds the path to the list of passwords that will be accepted.
+func (c *Configuration) PasswordsPath() string {
+	return filepath.Join(c.configurationDir, "passwords.lst")
+}
+
 // HostKeyPath holds the path to the host keys.
 func (c *Configuration) HostKeyPath() string {
 	return filepath.Join(c.configurationDir, "private_key")

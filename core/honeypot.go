@@ -38,6 +38,7 @@ type Honeypot struct {
 	toClose       listCloser
 	logger        *logger.Logger
 	sshServer     *ssh.Server
+	logFd         os.File
 }
 
 func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeypot, error) {
@@ -55,6 +56,15 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		vfs = tarfs.New(tar.NewReader(fd))
 	}
 
+	// Set up the app log
+	log.Printf("- Writing app logs to %s\n", configuration.AppLogPath())
+	logFd, err := os.OpenFile(configuration.AppLogPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	toClose = append(toClose, logFd)
+
 	sharedOS := vos.NewSharedOS(vfs, vos.Utsname{
 		Sysname:    "Linux",
 		Nodename:   "vm-4cb2f",
@@ -71,7 +81,8 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		configuration: configuration,
 		sharedOS:      sharedOS,
 		toClose:       toClose,
-		logger:        logger.NewJsonLinesLogRecorder(stderr),
+		logger:        logger.NewJsonLinesLogRecorder(io.MultiWriter(logFd, stderr)),
+		logFd:         *logFd,
 	}
 
 	honeypot.sshServer = &ssh.Server{
@@ -194,13 +205,15 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 }
 
 func (h *Honeypot) ListenAndServe() error {
-
 	log.Printf("- Starting SSH server on %s\n", h.sshServer.Addr)
 	return h.sshServer.ListenAndServe()
 }
 
 func (h *Honeypot) Shutdown(ctx context.Context) error {
+	log.Printf("Terminating SSH server on %s\n", h.sshServer.Addr)
+
 	defer h.Close()
+	h.logFd.Sync()
 	return h.sshServer.Shutdown(ctx)
 }
 

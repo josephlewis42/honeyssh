@@ -26,7 +26,7 @@ func NewJsonLinesLogRecorder(w io.Writer) *Logger {
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Println(string(entry))
+			_, err = fmt.Fprintln(w, string(entry))
 			return err
 		},
 	}
