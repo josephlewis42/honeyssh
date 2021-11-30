@@ -15,8 +15,6 @@ import (
 	"josephlewis.net/osshit/core/config"
 )
 
-var ()
-
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",

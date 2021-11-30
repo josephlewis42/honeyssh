@@ -245,13 +245,24 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 
 func (h *Honeypot) ListenAndServe() error {
 	log.Printf("- Starting SSH server on %s\n", h.sshServer.Addr)
+	h.logger.Sessionless().Record(&logger.LogEntry_HoneypotEvent{
+		HoneypotEvent: &logger.HoneypotEvent{
+			EventType: logger.HoneypotEvent_START,
+		},
+	})
+
 	return h.sshServer.ListenAndServe()
 }
 
 func (h *Honeypot) Shutdown(ctx context.Context) error {
-	log.Printf("Terminating SSH server on %s\n", h.sshServer.Addr)
-
 	defer h.Close()
+	log.Printf("Terminating SSH server on %s\n", h.sshServer.Addr)
+	h.logger.Sessionless().Record(&logger.LogEntry_HoneypotEvent{
+		HoneypotEvent: &logger.HoneypotEvent{
+			EventType: logger.HoneypotEvent_TERMINATE,
+		},
+	})
+
 	h.logFd.Sync()
 	return h.sshServer.Shutdown(ctx)
 }
