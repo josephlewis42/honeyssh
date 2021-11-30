@@ -13,9 +13,6 @@ import (
 	"josephlewis.net/osshit/third_party/tarfs"
 )
 
-// VFS implements a virtual filesystem and is the second layer of the virtual OS.
-type VFS = afero.Fs
-
 var nopFs = afero.NewReadOnlyFs(afero.NewMemMapFs())
 
 func NewNopFs() VFS {

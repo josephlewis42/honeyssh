@@ -7,48 +7,6 @@ import (
 	"sync"
 )
 
-// VEnv represents a virtual environment.
-type VEnv interface {
-	// UserHomeDir returns the current user's home directory.
-	UserHomeDir() (string, error)
-
-	// Unsetenv unsets a single environment variable.
-	Unsetenv(key string) error
-
-	// Setenv sets the value of the environment variable named by the key.
-	// It returns an error, if any.
-	Setenv(key, value string) error
-
-	// LookupEnv retrieves the value of the environment variable named by the key.
-	// If the variable is present in the environment the value (which may be
-	// empty) is returned and the boolean is true. Otherwise the returned value
-	// will be empty and the boolean will be false.
-	LookupEnv(key string) (string, bool)
-
-	// Getenv retrieves the value of the environment variable named by the key.
-	// It returns the value, which will be empty if the variable is not present.
-	// To distinguish between an empty value and an unset value, use LookupEnv.
-	Getenv(key string) string
-
-	// ExpandEnv replaces ${var} or $var in the string according to the values of
-	// the current environment variables. References to undefined variables are
-	// replaced by the empty string.
-	ExpandEnv(s string) string
-
-	// Environ returns a copy of strings representing the environment, in the
-	// form "key=value".
-	Environ() []string
-
-	// Clearenv deletes all environment variables.
-	Clearenv()
-}
-
-type EnvironFetcher interface {
-	// Environ returns a copy of strings representing the environment, in the
-	// form "key=value".
-	Environ() []string
-}
-
 // CopyEnv copies all the environment variables from src to dst.
 func CopyEnv(dst VEnv, src EnvironFetcher) error {
 	for _, e := range src.Environ() {

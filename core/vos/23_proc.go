@@ -52,30 +52,6 @@ func LookPath(vos VOS, file string) (string, error) {
 	return "", ErrNotFound
 }
 
-type VProc interface {
-	// Returns the path to the executable that started the process.
-	Executable() (string, error)
-
-	// Getpid returns the process id of the caller.
-	Getpid() int
-
-	// Getuid returns the numeric user id of the caller.
-	Getuid() int
-
-	// Returns the arguments to the current process.
-	Args() []string
-
-	// Getwd returns a rooted path name corresponding to the current directory.
-	Getwd() (dir string, err error)
-
-	// Chdir changes the directory.
-	Chdir(dir string) error
-
-	// Run executes the command, waits for it to finish and returns the status
-	// code.
-	Run() int
-}
-
 // Cmd is similar to go's os/exec.Cmd.
 type Cmd struct {
 	// Path is the path of the command to run.

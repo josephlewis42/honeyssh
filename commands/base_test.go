@@ -1,6 +1,9 @@
 package commands
 
-import "fmt"
+import (
+	"fmt"
+	"testing"
+)
 
 func ExampleBytesToHuman() {
 
@@ -16,4 +19,17 @@ func ExampleBytesToHuman() {
 	// Output: 512
 	// 23G
 	// 5.1K
+}
+
+func TestAllCommands(t *testing.T) {
+	for cn, cmd := range AllCommands {
+		t.Run(cn, func(t *testing.T) {
+			if cmd == nil {
+				t.Fatal("nil command", cn)
+			}
+
+			// cmdName := path.Base(cn)
+
+		})
+	}
 }

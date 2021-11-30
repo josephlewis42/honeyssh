@@ -5,12 +5,6 @@ import (
 	"os"
 )
 
-type VIO interface {
-	Stdin() io.ReadCloser
-	Stdout() io.WriteCloser
-	Stderr() io.WriteCloser
-}
-
 func NewVIOAdapter(stdin io.ReadCloser, stdout, stderr io.WriteCloser) *VIOAdapter {
 	return &VIOAdapter{
 		IStdin:  stdin,
