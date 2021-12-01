@@ -27,9 +27,6 @@ func TestAllCommands(t *testing.T) {
 			if cmd == nil {
 				t.Fatal("nil command", cn)
 			}
-
-			// cmdName := path.Base(cn)
-
 		})
 	}
 }
