@@ -6,17 +6,26 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Reset implements the UNIX reset command.
+// Reset sends an ANSI reset command if connected to a PTY.
 func Reset(virtOS vos.VOS) int {
-	if virtOS.GetPTY().IsPTY {
-		// Assumes VT100 compatibility.
-		fmt.Fprintf(virtOS.Stdout(), "\033c")
+	cmd := &SimpleCommand{
+		Use:   "reset",
+		Short: "Sets the terminal modes to default values.",
+		// Never bail, even if args are bad.
+		NeverBail: true,
 	}
-	return 0
+
+	return cmd.Run(virtOS, func() int {
+		if virtOS.GetPTY().IsPTY {
+			// Assumes VT100 compatibility.
+			fmt.Fprintf(virtOS.Stdout(), "\033c")
+		}
+		return 0
+	})
 }
 
 var _ HoneypotCommandFunc = Reset
 
 func init() {
-	addBinCmd("reset", HoneypotCommandFunc(Reset))
+	addBinCmd("reset", Reset)
 }

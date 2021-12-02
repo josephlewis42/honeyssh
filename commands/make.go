@@ -6,7 +6,9 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Make implements a fake make command.
+// Make implements a no-op POSIX make command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/make.html
 func Make(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "make [options] [target] ...",
@@ -25,5 +27,5 @@ func Make(virtOS vos.VOS) int {
 var _ HoneypotCommandFunc = Make
 
 func init() {
-	addBinCmd("make", HoneypotCommandFunc(Make))
+	addBinCmd("make", Make)
 }

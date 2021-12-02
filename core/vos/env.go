@@ -8,8 +8,8 @@ import (
 )
 
 // CopyEnv copies all the environment variables from src to dst.
-func CopyEnv(dst VEnv, src EnvironFetcher) error {
-	for _, e := range src.Environ() {
+func CopyEnv(dst VEnv, src []string) error {
+	for _, e := range src {
 		split := strings.SplitN(e, "=", 2)
 		key, value := split[0], ""
 		if len(split) > 1 {
@@ -37,15 +37,8 @@ func NewMapEnvFrom(src EnvironFetcher) *MapEnv {
 func NewMapEnvFromEnvList(environ []string) *MapEnv {
 	out := &MapEnv{}
 
-	for _, e := range environ {
-		split := strings.SplitN(e, "=", 2)
-		key, value := split[0], ""
-		if len(split) > 1 {
-			value = split[1]
-		}
-		// Ignore error, it will never be set for MapEnv.
-		_ = out.Setenv(key, value)
-	}
+	// Ignore error, it will never be set for MapEnv.
+	_ = CopyEnv(out, environ)
 
 	return out
 }

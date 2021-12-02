@@ -178,6 +178,17 @@ func (s *SimpleCommand) RunEachArg(virtOS vos.VOS, callback func(string) error) 
 	})
 }
 
+// RunE runs the callback and converts the error into a return value and message.
+func (s *SimpleCommand) RunE(virtOS vos.VOS, callback func() error) int {
+	return s.Run(virtOS, func() int {
+		if err := callback(); err != nil {
+			fmt.Fprintf(virtOS.Stderr(), "%s: %s\n", s.Flags().Program(), err.Error())
+			return 1
+		}
+		return 0
+	})
+}
+
 const (
 	colorAlways = "always"
 	colorAuto   = "auto"

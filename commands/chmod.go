@@ -91,6 +91,8 @@ func ChmodApplyMode(mode string, orig fs.FileMode) (fs.FileMode, error) {
 }
 
 // Chmod implements a POSIX chmod command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/chmod.html#tag_20_17
 func Chmod(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "chmod [OPTION...] MODE FILE...",

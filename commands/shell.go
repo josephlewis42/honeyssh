@@ -194,7 +194,7 @@ func (s *Shell) Run() int {
 			// If the full command was environment variables, set them. Otherwise they
 			// should only be populated for the upcoming command.
 			if 0 == len(tokens) {
-				vos.CopyEnv(s.VirtualOS, vos.NewMapEnvFromEnvList(effectiveEnv))
+				vos.CopyEnv(s.VirtualOS, effectiveEnv)
 				continue
 			}
 

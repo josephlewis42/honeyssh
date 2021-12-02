@@ -41,5 +41,5 @@ Swap:      24587768     4301240    20286528`)
 var _ HoneypotCommandFunc = Free
 
 func init() {
-	addBinCmd("free", HoneypotCommandFunc(Free))
+	addBinCmd("free", Free)
 }

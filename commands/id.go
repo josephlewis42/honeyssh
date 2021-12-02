@@ -6,12 +6,13 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Id implements a fake id command.
+// Id implements a the POSIX id command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/id.html
 func Id(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "id [OPTION]... [USER]",
-		Short: "Print user and group information.",
-
+		Short: "Get the user's identity.",
 		// Never bail, even if args are bad.
 		NeverBail: true,
 	}
@@ -26,5 +27,5 @@ func Id(virtOS vos.VOS) int {
 var _ HoneypotCommandFunc = Id
 
 func init() {
-	addBinCmd("id", HoneypotCommandFunc(Id))
+	addBinCmd("id", Id)
 }

@@ -17,10 +17,11 @@ type Configuration struct {
 	passwordLock     sync.Mutex
 	cachedPasswords  map[string][]string
 
-	Motd      string `json:"motd"`
-	SSHPort   int    `json:"ssh_port"`
-	Hostname  string `json:"hostname"`
-	SSHBanner string `json:"ssh_banner"`
+	Motd             string `json:"motd"`
+	SSHPort          int    `json:"ssh_port"`
+	Hostname         string `json:"hostname"`
+	SSHBanner        string `json:"ssh_banner"`
+	AllowAnyPassword bool   `json:"allow_any_password"`
 }
 
 func (c *Configuration) ConfigurationPath() string {

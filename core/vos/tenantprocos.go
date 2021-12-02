@@ -110,7 +110,7 @@ type ProcAttr struct {
 	// If Dir is non-empty, the child changes into the directory before
 	// creating the process.
 	Dir string
-	// If Env is non-nil, it gives the environment variables for the
+	// If Env is non-empty, it gives the environment variables for the
 	// new process in the form returned by Environ.
 	// If it is nil, the result of Environ will be used.
 	Env []string
@@ -138,7 +138,7 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 	}
 
 	var env VEnv
-	if attr.Env == nil {
+	if len(attr.Env) == 0 {
 		env = NewMapEnvFrom(ea.VEnv)
 	} else {
 		env = NewMapEnvFromEnvList(attr.Env)

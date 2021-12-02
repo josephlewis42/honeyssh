@@ -6,7 +6,9 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Mail implements a fake mail command.
+// Mail implements a no-op POSIX mail command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/mailx.html
 func Mail(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "mail [OPTION...] [address...]",

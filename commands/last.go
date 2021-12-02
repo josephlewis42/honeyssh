@@ -31,5 +31,5 @@ func Last(virtOS vos.VOS) int {
 var _ HoneypotCommandFunc = Last
 
 func init() {
-	addBinCmd("last", HoneypotCommandFunc(Last))
+	addBinCmd("last", Last)
 }

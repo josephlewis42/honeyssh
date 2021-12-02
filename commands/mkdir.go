@@ -8,6 +8,8 @@ import (
 )
 
 // Mkdir implements a POSIX mkdir command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/mkdir.html
 func Mkdir(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "mkdir [OPTION...] DIRECTORY...",
@@ -57,5 +59,5 @@ func Mkdir(virtOS vos.VOS) int {
 var _ HoneypotCommandFunc = Mkdir
 
 func init() {
-	addBinCmd("mkdir", HoneypotCommandFunc(Mkdir))
+	addBinCmd("mkdir", Mkdir)
 }

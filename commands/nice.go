@@ -1,10 +1,14 @@
 package commands
 
 import (
+	"fmt"
+
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Nice implements a fake kill command.
+// Nice implements a fake POSIX nice command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/nice.html
 func Nice(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "nice [OPTION] [COMMAND [ARG]...]",
@@ -14,14 +18,30 @@ func Nice(virtOS vos.VOS) int {
 		NeverBail: true,
 	}
 
+	_ = cmd.Flags().IntLong("niceness", 'n', 10, "Amount to add to the niceness.")
+
 	return cmd.Run(virtOS, func() int {
-		// Noop
-		return 0
+		args := cmd.Flags().Args()
+
+		if len(args) == 0 {
+			fmt.Fprintln(virtOS.Stdout(), "0")
+			return 0
+		}
+
+		proc, err := virtOS.StartProcess(args[0], args, &vos.ProcAttr{
+			Files: virtOS,
+		})
+		if err != nil {
+			fmt.Fprintf(virtOS.Stderr(), "nice: couldn't start process: %v\n", err)
+			return 1
+		}
+
+		return proc.Run()
 	})
 }
 
 var _ HoneypotCommandFunc = Nice
 
 func init() {
-	addBinCmd("nice", HoneypotCommandFunc(Nice))
+	addBinCmd("nice", Nice)
 }

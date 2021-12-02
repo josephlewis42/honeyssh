@@ -1,33 +1,31 @@
 package commands
 
 import (
-	"flag"
 	"fmt"
 
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Env implements the UNIX env command.
+// Env implements the POSIX env command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/env.html
 func Env(virtOS vos.VOS) int {
-	flags := flag.NewFlagSet("env", flag.ContinueOnError)
-	flags.SetOutput(virtOS.Stderr())
-	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
-		virtOS.LogInvalidInvocation(err)
-
-		fmt.Fprintln(virtOS.Stderr(), "Usage: env")
-		fmt.Fprintln(virtOS.Stderr(), "Print the resulting environment.")
-		return 1
+	cmd := &SimpleCommand{
+		Use:   "env",
+		Short: "Set or print the environment for command invocation.",
 	}
 
-	for _, envDef := range virtOS.Environ() {
-		fmt.Fprintln(virtOS.Stdout(), envDef)
-	}
+	return cmd.Run(virtOS, func() int {
+		for _, envDef := range virtOS.Environ() {
+			fmt.Fprintln(virtOS.Stdout(), envDef)
+		}
 
-	return 0
+		return 0
+	})
 }
 
 var _ HoneypotCommandFunc = Env
 
 func init() {
-	addBinCmd("env", HoneypotCommandFunc(Env))
+	addBinCmd("env", Env)
 }

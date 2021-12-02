@@ -1,37 +1,30 @@
 package commands
 
 import (
-	"flag"
-	"fmt"
 	"io"
 
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Cat implements the UNIX cat command.
+// Cat implements the POSIX cat command.
+//
+// https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/
 func Cat(virtOS vos.VOS) int {
-	flags := flag.NewFlagSet("cat", flag.ContinueOnError)
-	flags.SetOutput(virtOS.Stderr())
-	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
-		virtOS.LogInvalidInvocation(err)
-
-		fmt.Fprintln(virtOS.Stderr(), "Usage: cat [OPTION]... [FILE]...")
-		fmt.Fprintln(virtOS.Stderr(), "Concatenate FILE(s) to standard output.")
-		return 1
+	cmd := &SimpleCommand{
+		Use:   "cat [OPTION]... [FILE]...",
+		Short: "Concatenate FILE(s) to standard output.",
 	}
 
-	for _, arg := range flags.Args() {
-		fd, err := virtOS.Open(arg)
+	return cmd.RunEachArg(virtOS, func(path string) error {
+		fd, err := virtOS.Open(path)
 		if err != nil {
-			fmt.Fprintf(virtOS.Stderr(), "cat: %v\n", err)
-			return 1
+			return err
 		}
+		defer fd.Close()
 
-		io.Copy(virtOS.Stdout(), fd)
-		fd.Close()
-	}
-
-	return 0
+		_, err = io.Copy(virtOS.Stdout(), fd)
+		return err
+	})
 }
 
 var _ HoneypotCommandFunc = Cat

@@ -100,13 +100,17 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 			ctx.SetValue(ContextAuthPassword, password)
 
 			var successfulLogin bool
-			passwords, err := configuration.GetPasswords(ctx.User())
-			if err != nil {
-				log.Print("error loading passwords:", err)
-			}
-			for _, allowedPass := range passwords {
-				if 0 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
-					successfulLogin = true
+			if configuration.AllowAnyPassword {
+				successfulLogin = true
+			} else {
+				passwords, err := configuration.GetPasswords(ctx.User())
+				if err != nil {
+					log.Print("error loading passwords:", err)
+				}
+				for _, allowedPass := range passwords {
+					if 0 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
+						successfulLogin = true
+					}
 				}
 			}
 

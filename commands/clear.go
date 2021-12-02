@@ -6,17 +6,26 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Clear implements the UNIX clear command.
+// Clear sends an ANSI clear command if connected to a PTY.
 func Clear(virtOS vos.VOS) int {
-	if virtOS.GetPTY().IsPTY {
-		// Assumes VT100 compatibility.
-		fmt.Fprintf(virtOS.Stdout(), "\033[0;0H")
+	cmd := &SimpleCommand{
+		Use:   "clear",
+		Short: "Clears the screen.",
+		// Never bail, even if args are bad.
+		NeverBail: true,
 	}
-	return 0
+
+	return cmd.Run(virtOS, func() int {
+		if virtOS.GetPTY().IsPTY {
+			// Assumes VT100 compatibility.
+			fmt.Fprintf(virtOS.Stdout(), "\033[0;0H")
+		}
+		return 0
+	})
 }
 
 var _ HoneypotCommandFunc = Clear
 
 func init() {
-	addBinCmd("clear", HoneypotCommandFunc(Clear))
+	addBinCmd("clear", Clear)
 }
