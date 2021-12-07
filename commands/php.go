@@ -6,7 +6,7 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// Php implements a fake Php interpreter.
+// Php implements a fake PHP interpreter.
 func Php(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "php [options] [-f] <file> [--] [args...]",
@@ -26,5 +26,5 @@ func Php(virtOS vos.VOS) int {
 var _ HoneypotCommandFunc = Php
 
 func init() {
-	addBinCmd("php", HoneypotCommandFunc(Php))
+	addBinCmd("php", Php)
 }

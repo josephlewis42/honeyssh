@@ -108,7 +108,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 					log.Print("error loading passwords:", err)
 				}
 				for _, allowedPass := range passwords {
-					if 0 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
+					if 1 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
 						successfulLogin = true
 					}
 				}
@@ -120,9 +120,9 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 					LoginAttempt: &logger.LoginAttempt{
 						Result:     logger.OperationResult_FAILURE,
 						Username:   ctx.User(),
-						PublicKey:  ctx.Value(ContextAuthPublicKey).([]byte),
-						Password:   fmt.Sprintf("%s", password),
-						RemoteAddr: fmt.Sprintf("%s", ctx.RemoteAddr()),
+						PublicKey:  maybeBytes(ctx.Value(ContextAuthPublicKey)),
+						Password:   fmt.Sprintf("%v", password),
+						RemoteAddr: fmt.Sprintf("%v", ctx.RemoteAddr()),
 					},
 				})
 			}
@@ -175,7 +175,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 		LoginAttempt: &logger.LoginAttempt{
 			Result:               logger.OperationResult_SUCCESS,
 			Username:             s.User(),
-			PublicKey:            s.Context().Value(ContextAuthPublicKey).([]byte),
+			PublicKey:            maybeBytes(s.Context().Value(ContextAuthPublicKey)),
 			Password:             fmt.Sprintf("%s", s.Context().Value(ContextAuthPassword)),
 			RemoteAddr:           fmt.Sprintf("%s", s.RemoteAddr()),
 			EnvironmentVariables: s.Environ(),
@@ -282,4 +282,11 @@ func (lc listCloser) Close() error {
 	}
 
 	return lastErr
+}
+
+func maybeBytes(data interface{}) []byte {
+	if bytes, ok := data.([]byte); ok {
+		return bytes
+	}
+	return nil
 }

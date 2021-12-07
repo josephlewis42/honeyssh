@@ -72,5 +72,5 @@ func Passwd(virtualOS vos.VOS) int {
 var _ HoneypotCommandFunc = Passwd
 
 func init() {
-	addBinCmd("passwd", HoneypotCommandFunc(Passwd))
+	addBinCmd("passwd", Passwd)
 }
