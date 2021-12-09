@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bytes"
+	"compress/gzip"
 	"reflect"
 	"strings"
 	"testing"
@@ -47,4 +49,8 @@ func TestDefaultPasswords(t *testing.T) {
 	assert.NotNil(t, defaultPasswords())
 }
 
-// test the FS follows FSHS: https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard
+func TestFs(t *testing.T) {
+	fsReader := bytes.NewReader(rootFsData)
+	_, gzipErr := gzip.NewReader(fsReader)
+	assert.Nil(t, gzipErr, "not a valid gzip")
+}

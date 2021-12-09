@@ -2,6 +2,7 @@ package core
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"context"
 	"crypto/subtle"
 	"fmt"
@@ -55,7 +56,16 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 			return nil, err
 		}
 		toClose = append(toClose, fd)
-		vfs = tarfs.New(tar.NewReader(fd))
+		gr, err := gzip.NewReader(fd)
+		if err != nil {
+			toClose.Close()
+			return nil, err
+		}
+		vfs, err = tarfs.New(tar.NewReader(gr))
+		if err != nil {
+			toClose.Close()
+			return nil, err
+		}
 	}
 
 	// Set up the app log

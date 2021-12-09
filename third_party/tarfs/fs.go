@@ -4,6 +4,7 @@ package tarfs
 import (
 	"archive/tar"
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func splitpath(name string) (dir, file string) {
 	return
 }
 
-func New(t *tar.Reader) *Fs {
+func New(t *tar.Reader) (*Fs, error) {
 	fs := &Fs{files: make(map[string]map[string]*File)}
 	for {
 		hdr, err := t.Next()
@@ -38,7 +39,7 @@ func New(t *tar.Reader) *Fs {
 			break
 		}
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		d, f := splitpath(hdr.Name)
@@ -49,11 +50,11 @@ func New(t *tar.Reader) *Fs {
 		var buf bytes.Buffer
 		size, err := buf.ReadFrom(t)
 		if err != nil {
-			panic("tarfs: reading from tar:" + err.Error())
+			return nil, errors.New("tarfs: reading from tar:" + err.Error())
 		}
 
 		if size != hdr.Size {
-			panic("tarfs: size mismatch")
+			return nil, errors.New("tarfs: size mismatch")
 		}
 
 		file := &File{
@@ -79,7 +80,7 @@ func New(t *tar.Reader) *Fs {
 		data: []byte{},
 	}
 
-	return fs
+	return fs, nil
 }
 
 func (fs *Fs) Open(name string) (afero.File, error) {

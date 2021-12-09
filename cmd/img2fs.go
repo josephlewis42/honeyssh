@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -19,15 +20,15 @@ const WhiteoutPrefix = ".wh."
 
 // img2fs converts a Docker image to a filesystem
 var img2fs = &cobra.Command{
-	Use:   "img2fs INPUT_TAR OUTPUT_TAR [TAG]",
+	Use:   "img2fs INPUT.tar OUTPUT.tar.gz [TAG]",
 	Short: "Convert a docker image to a .tar for use as a root filesystem.",
-	Long: `Convert a docker image to a .tar for use as a root filesystem.
+	Long: `Convert a docker image to a .tar.gz for use as a root filesystem.
 
 Prepare an image by running the following:
 
 	docker pull some-image:latest
 	docker save some-image:latest > some-image.tar
-	osshit img2fs some-image.tar fs.tar
+	osshit img2fs some-image.tar root_fs.tar.gz
 `,
 	Args: cobra.RangeArgs(2, 3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -81,8 +82,10 @@ Prepare an image by running the following:
 			return err
 		}
 		defer out.Close()
+		gw := gzip.NewWriter(out)
+		defer gw.Close()
 
-		return walkImgFs(layers, out)
+		return walkImgFs(layers, gw)
 	},
 }
 
@@ -124,6 +127,7 @@ func walkImgFs(layers []containerregistry.Layer, w io.Writer) error {
 				whiteouts[hdr.Name] = true
 			}
 
+			hdr.Name = strings.TrimPrefix(hdr.Name, "./")
 			if err := tw.WriteHeader(hdr); err != nil {
 				return err
 			}

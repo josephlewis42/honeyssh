@@ -19,15 +19,18 @@ func NewNopFs() VFS {
 	return nopFs
 }
 
-func NewCopyOnWriteFs(tarReader *tar.Reader) VFS {
-	base := tarfs.New(tarReader)
+func NewCopyOnWriteFs(tarReader *tar.Reader) (VFS, error) {
+	base, err := tarfs.New(tarReader)
+	if err != nil {
+		return nil, err
+	}
 	roBase := afero.NewReadOnlyFs(base)
 
 	memFs := afero.NewMemMapFs()
 	lfsMemfs := NewLinkingFs(memFs)
 	ufs := cowfs.NewCopyOnWriteFs(roBase, lfsMemfs)
 
-	return ufs
+	return ufs, nil
 }
 
 func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error)) VFS {

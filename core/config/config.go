@@ -16,6 +16,9 @@ var (
 
 	//go:embed default/config.yaml
 	defaultConfigData []byte
+
+	//go:embed default/root_fs.tar.gz
+	rootFsData []byte
 )
 
 const ConfigurationName = "config.yaml"
@@ -65,7 +68,7 @@ func (c *Configuration) HostKeyPath() string {
 
 // RootFsTarPath holds the path to the root FS.
 func (c *Configuration) RootFsTarPath() string {
-	return filepath.Join(c.configurationDir, "root_fs.tar")
+	return filepath.Join(c.configurationDir, "root_fs.tar.gz")
 }
 
 type passwordsData map[string][]string

@@ -43,15 +43,16 @@ func Initialize(path string) error {
 		{cfg.ConfigurationPath(), defaultConfigData},
 		{cfg.HostKeyPath(), privateKey},
 		{cfg.PasswordsPath(), defaultPasswordsData},
+		{cfg.RootFsTarPath(), rootFsData},
 	}
 	for _, configFile := range configFiles {
 		if !exists(configFile.path) {
-			log.Print("  ", configFile.path)
+			log.Println("  ", configFile.path)
 			if err := ioutil.WriteFile(configFile.path, configFile.contents, 0600); err != nil {
 				return fmt.Errorf("couldn't write configuration file to %q: %v", configFile.path, err)
 			}
 		} else {
-			log.Println("  ", configFile.path, " (skipped, it already exists)")
+			log.Println("  ", configFile.path, "(skipped, it already exists)")
 		}
 	}
 
