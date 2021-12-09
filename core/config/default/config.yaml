@@ -1,0 +1,14 @@
+# Port to listen on for SSH connections.
+ssh_port: 2222
+
+# Message of the day to display when a user logs in.
+motd: ""
+
+# Hostname of the machine to show users.
+hostname: localhost
+
+# Banner to show on all connections before logging in.
+ssh_banner: ""
+
+# Whether to accept any password.
+allow_any_password: false

@@ -1,12 +1,21 @@
 package config
 
 import (
+	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
 
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	//go:embed default/passwords.yaml
+	defaultPasswordsData []byte
+
+	//go:embed default/config.yaml
+	defaultConfigData []byte
 )
 
 const ConfigurationName = "config.yaml"
@@ -59,6 +68,8 @@ func (c *Configuration) RootFsTarPath() string {
 	return filepath.Join(c.configurationDir, "root_fs.tar")
 }
 
+type passwordsData map[string][]string
+
 // GetPasswords returns allowable passwords for the given username.
 func (c *Configuration) GetPasswords(username string) ([]string, error) {
 	c.passwordLock.Lock()
@@ -69,7 +80,7 @@ func (c *Configuration) GetPasswords(username string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("no password file: %v", err)
 		}
-		c.cachedPasswords = make(map[string][]string)
+		c.cachedPasswords = make(passwordsData)
 		if err := yaml.UnmarshalStrict(passwordsRaw, &c.cachedPasswords); err != nil {
 			return nil, fmt.Errorf("couldn't unmarshal passwords file: %v", err)
 		}
@@ -81,9 +92,17 @@ func (c *Configuration) GetPasswords(username string) ([]string, error) {
 }
 
 func defaultConfig() *Configuration {
-	return &Configuration{
-		Motd:     `Last login: Sun Jun 27 16:19:57 PDT 2021 on tty1`,
-		SSHPort:  2222,
-		Hostname: "localhost",
+	var out Configuration
+	if err := yaml.UnmarshalStrict(defaultConfigData, &out); err != nil {
+		panic(err)
 	}
+	return &out
+}
+
+func defaultPasswords() passwordsData {
+	var out passwordsData
+	if err := yaml.UnmarshalStrict(defaultPasswordsData, &out); err != nil {
+		panic(err)
+	}
+	return out
 }
