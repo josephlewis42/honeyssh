@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -44,28 +45,30 @@ type Honeypot struct {
 	logFd         os.File
 }
 
+type HoneypotOpts struct {
+	// Additional place to log output
+	AdditionalLogger io.Writer
+}
+
 func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeypot, error) {
 	var toClose listCloser
 
 	// Set up the filesystem.
-	vfs := vos.NewNopFs()
-	if configuration.RootFsTarPath() != "" {
-		fd, err := os.Open(configuration.RootFsTarPath())
-		if err != nil {
-			toClose.Close()
-			return nil, err
-		}
-		toClose = append(toClose, fd)
-		gr, err := gzip.NewReader(fd)
-		if err != nil {
-			toClose.Close()
-			return nil, err
-		}
-		vfs, err = tarfs.New(tar.NewReader(gr))
-		if err != nil {
-			toClose.Close()
-			return nil, err
-		}
+	fd, err := os.Open(configuration.RootFsTarPath())
+	if err != nil {
+		toClose.Close()
+		return nil, err
+	}
+	toClose = append(toClose, fd)
+	gr, err := gzip.NewReader(fd)
+	if err != nil {
+		toClose.Close()
+		return nil, err
+	}
+	vfs, err := tarfs.New(tar.NewReader(gr))
+	if err != nil {
+		toClose.Close()
+		return nil, err
 	}
 
 	// Set up the app log
@@ -113,10 +116,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 			if configuration.AllowAnyPassword {
 				successfulLogin = true
 			} else {
-				passwords, err := configuration.GetPasswords(ctx.User())
-				if err != nil {
-					log.Print("error loading passwords:", err)
-				}
+				passwords := configuration.GetPasswords(ctx.User())
 				for _, allowedPass := range passwords {
 					if 1 == subtle.ConstantTimeCompare([]byte(password), []byte(allowedPass)) {
 						successfulLogin = true
@@ -258,14 +258,24 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 }
 
 func (h *Honeypot) ListenAndServe() error {
-	log.Printf("- Starting SSH server on %s\n", h.sshServer.Addr)
+	addr := fmt.Sprintf(":%d", h.configuration.SSHPort)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	defer ln.Close()
+	return h.Serve(ln)
+}
+
+func (h *Honeypot) Serve(listener net.Listener) error {
+	log.Printf("- Starting SSH server on %v\n", listener.Addr())
 	h.logger.Sessionless().Record(&logger.LogEntry_HoneypotEvent{
 		HoneypotEvent: &logger.HoneypotEvent{
 			EventType: logger.HoneypotEvent_START,
 		},
 	})
 
-	return h.sshServer.ListenAndServe()
+	return h.sshServer.Serve(listener)
 }
 
 func (h *Honeypot) Shutdown(ctx context.Context) error {

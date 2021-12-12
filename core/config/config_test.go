@@ -44,11 +44,6 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(t, defaultConfig())
 }
 
-func TestDefaultPasswords(t *testing.T) {
-	// Will panic() on load failure because it should never happen at runtime.
-	assert.NotNil(t, defaultPasswords())
-}
-
 func TestFs(t *testing.T) {
 	fsReader := bytes.NewReader(rootFsData)
 	_, gzipErr := gzip.NewReader(fsReader)

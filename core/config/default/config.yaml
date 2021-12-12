@@ -12,3 +12,22 @@ ssh_banner: ""
 
 # Whether to accept any password.
 allow_any_password: false
+
+# List of passwords that work for any user.
+global_passwords: []
+
+# List of users on the system. Each user has the following properties:
+#
+# - username: <string> # username of the user
+#   uid: <integer> # user identifier, 0 if empty
+#   gid: <integer> # group identifier, 0 if empty
+#   home: <string> # home directory, / if empty
+#   shell: <string> # shell to display, /bin/sh if empty
+#   passwords <string array> # passwords that allow this user to log in
+users:
+- username: "root"
+  uid: 0
+  gid: 0
+  home: /root
+  shell: /bin/sh
+  passwords: []

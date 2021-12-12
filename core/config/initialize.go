@@ -42,7 +42,6 @@ func Initialize(path string) error {
 	}{
 		{cfg.ConfigurationPath(), defaultConfigData},
 		{cfg.HostKeyPath(), privateKey},
-		{cfg.PasswordsPath(), defaultPasswordsData},
 		{cfg.RootFsTarPath(), rootFsData},
 	}
 	for _, configFile := range configFiles {
