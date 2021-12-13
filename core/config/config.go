@@ -32,13 +32,14 @@ type Configuration struct {
 
 	Motd             string `json:"motd"`
 	SSHPort          int    `json:"ssh_port"`
-	Hostname         string `json:"hostname"`
 	SSHBanner        string `json:"ssh_banner"`
 	AllowAnyPassword bool   `json:"allow_any_password"`
 
 	GlobalPasswords []string `json:"global_passwords"`
 
 	Users []User `json:"users"`
+
+	Uname Uname `json:"uname"`
 }
 
 type User struct {
@@ -48,6 +49,15 @@ type User struct {
 	Home      string   `json:"home"`
 	Shell     string   `json:"shell"`
 	Passwords []string `json:"passwords"`
+}
+
+type Uname struct {
+	KernelName       string `json:"kernel_name"`       // Kernel Name name e.g. "Linux".
+	Nodename         string `json:"nodename"`          // Hostname of the machine on one of its networks.
+	KernelRelease    string `json:"kernel_release"`    // OS release e.g. "4.15.0-147-generic"
+	KernelVersion    string `json:"kernel_version"`    // OS version e.g. "#151-Ubuntu SMP Fri Jun 18 19:21:19 UTC 2021"
+	HardwarePlatform string `json:"hardware_platform"` // Machnine name e.g. "x86_64"
+	Domainname       string `json:"domainname"`        // NIS or YP domain name.
 }
 
 func (c *Configuration) fs() afero.Fs {

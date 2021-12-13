@@ -15,9 +15,16 @@ type ProcessFunc func(VOS) int
 // no process was found.
 type ProcessResolver func(path string) ProcessFunc
 
-func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver, config *config.Configuration) *SharedOS {
+func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Configuration) *SharedOS {
 	return &SharedOS{
-		Utsname:         utsname,
+		Utsname: Utsname{
+			Sysname:    config.Uname.KernelName,
+			Nodename:   config.Uname.Nodename,
+			Release:    config.Uname.KernelRelease,
+			Version:    config.Uname.KernelVersion,
+			Machine:    config.Uname.HardwarePlatform,
+			Domainname: config.Uname.Domainname,
+		},
 		mockFS:          baseFS,
 		mockPID:         0,
 		bootTime:        time.Now(),

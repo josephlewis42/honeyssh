@@ -1,0 +1,5 @@
+package vostest
+
+func NewTestOs() {
+
+}

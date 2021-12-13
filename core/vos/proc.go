@@ -2,7 +2,6 @@ package vos
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os/exec"
 	"path/filepath"
@@ -50,38 +49,4 @@ func LookPath(vos VOS, file string) (string, error) {
 		}
 	}
 	return "", ErrNotFound
-}
-
-// Cmd is similar to go's os/exec.Cmd.
-type Cmd struct {
-	// Path is the path of the command to run.
-	Path string
-
-	// Args holds command line arguments, including the command as Args[0].
-	// If the Args field is empty or nil, Run uses {Path}.
-	//
-	// In typical use, both Path and Args are set by calling Command.
-	Args []string
-
-	// Env specifies the environment of the process.
-	// Each entry is of the form "key=value".
-	// If Env is nil, the new process uses the current process's
-	// environment.
-	// If Env contains duplicate environment keys, only the last
-	// value in the slice for each duplicate key is used.
-	// As a special case on Windows, SYSTEMROOT is always added if
-	// missing and not explicitly set to the empty string.
-	Env []string
-
-	// Dir specifies the working directory of the command.
-	// If Dir is the empty string, Run runs the command in the
-	// calling process's current directory.
-	Dir string
-
-	// Stdin specifies the process's standard input.
-	Stdin io.Reader
-
-	// Stdout and Stderr specify the process's standard output and error.
-	Stdout io.Writer
-	Stderr io.Writer
 }

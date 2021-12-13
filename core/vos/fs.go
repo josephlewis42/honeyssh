@@ -13,12 +13,6 @@ import (
 	"josephlewis.net/osshit/third_party/tarfs"
 )
 
-var nopFs = afero.NewReadOnlyFs(afero.NewMemMapFs())
-
-func NewNopFs() VFS {
-	return nopFs
-}
-
 func NewCopyOnWriteFs(tarReader *tar.Reader) (VFS, error) {
 	base, err := tarfs.New(tarReader)
 	if err != nil {

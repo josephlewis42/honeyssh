@@ -79,14 +79,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 	log.Printf("- Writing app logs to %s\n", logFd.Name())
 	toClose = append(toClose, logFd)
 
-	sharedOS := vos.NewSharedOS(vfs, vos.Utsname{
-		Sysname:    "Linux",
-		Nodename:   "vm-4cb2f",
-		Release:    "4.15.0-147-generic",
-		Version:    "#151-Ubuntu SMP",
-		Machine:    "x86_64",
-		Domainname: "",
-	}, func(processPath string) vos.ProcessFunc {
+	sharedOS := vos.NewSharedOS(vfs, func(processPath string) vos.ProcessFunc {
 		return commands.AllCommands[processPath]
 	}, configuration)
 	sharedOS.SetPID(4507)

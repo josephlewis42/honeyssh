@@ -4,8 +4,21 @@ ssh_port: 2222
 # Message of the day to display when a user logs in.
 motd: ""
 
-# Hostname of the machine to show users.
-hostname: localhost
+# Uname holds system information to display.
+# Use `uname -a` to find good looking vaues.
+uname:
+  # Hostname of the machine to show users.
+  nodename: localhost
+  # Name of the kernel.
+  kernel_name: Linux
+  # Release of the kernel.
+  kernel_release: "4.15.0-147-generic"
+  # Kernel version number.
+  kernel_version: "#151-Ubuntu SMP Fri Jun 18 19:21:19 UTC 2021"
+  # CPU architecture.
+  hardware_platform: "x86_64"
+  # NIS or YP domain name, usually blank.
+  domainname: ""
 
 # Banner to show on all connections before logging in.
 ssh_banner: ""
