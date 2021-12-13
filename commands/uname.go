@@ -34,12 +34,7 @@ func Uname(virtOS vos.VOS) int {
 		return 1
 	}
 
-	uname, err := virtOS.Uname()
-	if err != nil {
-		fmt.Fprintf(virtOS.Stderr(), "uname: %s\n", err)
-		return 1
-	}
-
+	uname := virtOS.Uname()
 	anyPrinted := false
 	for _, entry := range []struct {
 		flag     *bool

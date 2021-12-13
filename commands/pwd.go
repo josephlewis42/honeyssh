@@ -19,12 +19,7 @@ func Pwd(virtOS vos.VOS) int {
 		return 1
 	}
 
-	pwd, err := virtOS.Getwd()
-	if err != nil {
-		fmt.Fprintf(virtOS.Stderr(), "%v\n", err)
-		return 1
-	}
-
+	pwd := virtOS.Getwd()
 	fmt.Fprintln(virtOS.Stdout(), pwd)
 
 	return 0

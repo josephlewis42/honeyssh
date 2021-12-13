@@ -3,7 +3,6 @@ package vos
 import (
 	"io"
 	"net"
-	"path/filepath"
 	"time"
 
 	"github.com/gliderlabs/ssh"
@@ -53,13 +52,13 @@ func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session ssh.Se
 }
 
 // Hostname implements VOS.Hostname.
-func (t *TenantOS) Hostname() (string, error) {
-	return t.sharedOS.Hostname(), nil
+func (t *TenantOS) Hostname() string {
+	return t.sharedOS.Hostname()
 }
 
 // Uname implements VOS.Uname.
-func (t *TenantOS) Uname() (Utsname, error) {
-	return t.sharedOS.Uname(), nil
+func (t *TenantOS) Uname() Utsname {
+	return t.sharedOS.Uname()
 }
 
 func (t *TenantOS) SetPTY(pty PTY) {
@@ -135,10 +134,14 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 	})
 }
 
-func (t *TenantOS) DownloadPath(source string) string {
-	dir := t.sharedOS.config.DownloadPath()
+func (t *TenantOS) DownloadPath(source string) (afero.File, error) {
 	base := time.Now().Format(time.RFC3339Nano)
-	downloadPath := filepath.Join(dir, base)
+	// TODO also create a metadata file.
+
+	fd, err := t.sharedOS.config.CreateDownload(base)
+	if err != nil {
+		return nil, err
+	}
 
 	t.eventRecorder.Record(&logger.LogEntry_Download{
 		Download: &logger.Download{
@@ -147,7 +150,7 @@ func (t *TenantOS) DownloadPath(source string) string {
 		},
 	})
 
-	return downloadPath
+	return fd, err
 }
 
 func (t *TenantOS) Now() time.Time {

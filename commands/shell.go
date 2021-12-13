@@ -104,16 +104,14 @@ func (s *Shell) Init(username string) {
 	_ = s.VirtualOS.Chdir(homedir)
 
 	s.VirtualOS.Setenv(EnvPath, "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
-	host, _ := s.VirtualOS.Hostname()
+	host := s.VirtualOS.Hostname()
 	s.VirtualOS.Setenv(EnvHostname, host)
 	if s.VirtualOS.GetPTY().IsPTY {
 		s.VirtualOS.Setenv(EnvPrompt, DefaultColorPrompt)
 	} else {
 		s.VirtualOS.Setenv(EnvPrompt, DefaultPrompt)
 	}
-	if wd, err := s.VirtualOS.Getwd(); err != nil {
-		s.VirtualOS.Setenv(EnvPWD, wd)
-	}
+	s.VirtualOS.Setenv(EnvPWD, s.VirtualOS.Getwd())
 	s.VirtualOS.Setenv(EnvUser, username)
 	s.VirtualOS.Setenv(EnvUID, fmt.Sprintf("%d", s.VirtualOS.Getuid()))
 }
@@ -126,7 +124,7 @@ func (s *Shell) Prompt() string {
 	prompt = strings.ReplaceAll(prompt, `\u`, s.VirtualOS.Getenv(EnvUser))
 	prompt = strings.ReplaceAll(prompt, `\h`, s.VirtualOS.Getenv(EnvHostname))
 
-	pwd, _ := s.VirtualOS.Getwd()
+	pwd := s.VirtualOS.Getwd()
 	home, _ := s.VirtualOS.UserHomeDir()
 	if strings.HasPrefix(pwd, home) {
 		pwd = "~" + strings.TrimPrefix(pwd, home)

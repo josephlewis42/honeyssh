@@ -33,7 +33,7 @@ func NewCopyOnWriteFs(tarReader *tar.Reader) (VFS, error) {
 	return ufs, nil
 }
 
-func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error)) VFS {
+func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string)) VFS {
 	rpos := &realpathOs{Getwd, base}
 	return NewPathMappingFs(base, func(op FsOp, name string) (string, error) {
 		switch op {
@@ -51,13 +51,13 @@ func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string, err error
 }
 
 type realpathOs struct {
-	getwd func() (dir string, err error)
+	getwd func() (dir string)
 	base  VFS
 }
 
 var _ realpath.OS = (*realpathOs)(nil)
 
-func (r *realpathOs) Getwd() (string, error) {
+func (r *realpathOs) Getwd() string {
 	return r.getwd()
 }
 

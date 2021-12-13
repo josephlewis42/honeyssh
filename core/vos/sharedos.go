@@ -17,8 +17,8 @@ type ProcessResolver func(path string) ProcessFunc
 
 func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver, config *config.Configuration) *SharedOS {
 	return &SharedOS{
+		Utsname:         utsname,
 		mockFS:          baseFS,
-		mockUtsname:     utsname,
 		mockPID:         0,
 		bootTime:        time.Now(),
 		processResolver: procResolver,
@@ -31,10 +31,10 @@ func NewSharedOS(baseFS VFS, utsname Utsname, procResolver ProcessResolver, conf
 // All public variables and methods no this type are guaranteed to produce
 // immutable objects.
 type SharedOS struct {
+	// Utsname holds the displayed OS info including hostname.
+	Utsname
 	// mockFS holds the base filesystem that is shared between ALL programs.
 	mockFS VFS
-	// mockUtsname holds the displayed OS info including hostname.
-	mockUtsname Utsname
 	// mockPID contains the next PID of the system.
 	mockPID int32
 	// The time the system booted.
@@ -43,14 +43,6 @@ type SharedOS struct {
 	processResolver ProcessResolver
 	// The user supplied configuration
 	config *config.Configuration
-}
-
-func (s *SharedOS) Hostname() string {
-	return s.mockUtsname.Nodename
-}
-
-func (s *SharedOS) Uname() Utsname {
-	return s.mockUtsname
 }
 
 // ReadOnlyFs returns a read only version of the base filesystem that multiple

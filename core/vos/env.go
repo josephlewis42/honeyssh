@@ -2,7 +2,6 @@ package vos
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 )
@@ -26,6 +25,12 @@ func CopyEnv(dst VEnv, src []string) error {
 // NewMapEnv creates a new environment backed by a map.
 func NewMapEnv() *MapEnv {
 	return &MapEnv{}
+}
+
+type EnvironFetcher interface {
+	// Environ returns a copy of strings representing the environment, in the
+	// form "key=value".
+	Environ() []string
 }
 
 // NewMapEnvFrom creates a new environment with a copy of the environment
@@ -93,11 +98,6 @@ func (m *MapEnv) Getenv(key string) string {
 	return val
 }
 
-// ExpandEnv implements VEnv.ExpandEnv.
-func (m *MapEnv) ExpandEnv(s string) string {
-	return os.Expand(s, m.Getenv)
-}
-
 // Environ implements VEnv.Environ.
 func (m *MapEnv) Environ() []string {
 	var env []string
@@ -107,11 +107,4 @@ func (m *MapEnv) Environ() []string {
 	}
 
 	return env
-}
-
-// Clearenv implements VEnv.Clearenv.
-func (m *MapEnv) Clearenv() {
-	m.rw.Lock()
-	defer m.rw.Unlock()
-	m.env = make(map[string]string)
 }

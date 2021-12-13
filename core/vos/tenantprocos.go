@@ -3,7 +3,6 @@ package vos
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"runtime/debug"
@@ -37,14 +36,6 @@ type TenantProcOS struct {
 
 var _ VOS = (*TenantProcOS)(nil)
 
-func (ea *TenantProcOS) Executable() (string, error) {
-	if ea.ExecutablePath == "" {
-		return "", os.ErrNotExist
-	}
-
-	return ea.ExecutablePath, nil
-}
-
 // Args implements VOS.Args.
 func (ea *TenantProcOS) Args() []string {
 	return ea.ProcArgs
@@ -61,8 +52,8 @@ func (ea *TenantProcOS) Getuid() int {
 }
 
 // Getwd implements VOS.Getwd.
-func (ea *TenantProcOS) Getwd() (dir string, err error) {
-	return ea.Dir, nil
+func (ea *TenantProcOS) Getwd() (dir string) {
+	return ea.Dir
 }
 
 // Chdir implements VOS.Chdir.

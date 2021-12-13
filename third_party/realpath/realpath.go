@@ -23,7 +23,7 @@ var (
 
 // Virtual OS interface.
 type OS interface {
-	Getwd() (dir string, err error)
+	Getwd() (dir string)
 	Lstat(name string) (os.FileInfo, error)
 	Readlink(name string) (string, error)
 }
@@ -36,10 +36,7 @@ func Realpath(os OS, fpath string) (string, error) {
 	}
 
 	if !path.IsAbs(fpath) {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
+		pwd := os.Getwd()
 		fpath = path.Join(pwd, fpath)
 	}
 

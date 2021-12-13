@@ -21,10 +21,20 @@ type Utsname struct {
 	Domainname string // NIS or YP domain name
 }
 
+func (u Utsname) Hostname() string {
+	return u.Nodename
+}
+
+func (u Utsname) Uname() Utsname {
+	return u
+}
+
+var _ VKernel = Utsname{}
+
 type VKernel interface {
-	Hostname() (string, error)
+	Hostname() string
 	// Uname mimics the uname syscall.
-	Uname() (Utsname, error)
+	Uname() Utsname
 }
 
 type PTY struct {
@@ -67,20 +77,6 @@ type VEnv interface {
 	// To distinguish between an empty value and an unset value, use LookupEnv.
 	Getenv(key string) string
 
-	// ExpandEnv replaces ${var} or $var in the string according to the values of
-	// the current environment variables. References to undefined variables are
-	// replaced by the empty string.
-	ExpandEnv(s string) string
-
-	// Environ returns a copy of strings representing the environment, in the
-	// form "key=value".
-	Environ() []string
-
-	// Clearenv deletes all environment variables.
-	Clearenv()
-}
-
-type EnvironFetcher interface {
 	// Environ returns a copy of strings representing the environment, in the
 	// form "key=value".
 	Environ() []string
@@ -93,9 +89,6 @@ type VIO interface {
 }
 
 type VProc interface {
-	// Returns the path to the executable that started the process.
-	Executable() (string, error)
-
 	// Getpid returns the process id of the caller.
 	Getpid() int
 
@@ -106,7 +99,7 @@ type VProc interface {
 	Args() []string
 
 	// Getwd returns a rooted path name corresponding to the current directory.
-	Getwd() (dir string, err error)
+	Getwd() (dir string)
 
 	// Chdir changes the directory.
 	Chdir(dir string) error
@@ -193,7 +186,7 @@ type Honeypot interface {
 
 	// Get a unique path in the downloads folder that the session can write a
 	// file to.
-	DownloadPath(source string) string
+	DownloadPath(source string) (afero.File, error)
 
 	// Now is the current honeypot time.
 	Now() time.Time

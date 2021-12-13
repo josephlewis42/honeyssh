@@ -6,18 +6,24 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/spf13/afero"
 )
 
 // Initialize creates the honeypot configuartion in the given directory.
 func Initialize(path string) error {
 	// Make sure path exists
-	stat, err := os.Stat(path)
+	full, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	stat, err := os.Stat(full)
 	if err != nil {
 		return err
 	}
@@ -25,9 +31,11 @@ func Initialize(path string) error {
 		return errors.New("intialization path must be a directory")
 	}
 
+	log.Println("Creating configuration in:", full)
+
 	// Set up configuration file.
 	cfg := defaultConfig()
-	cfg.configurationDir = path
+	cfg.configurationDir = full
 
 	log.Println("Generating private key...")
 	privateKey, err := generateRSAKey()
@@ -36,18 +44,24 @@ func Initialize(path string) error {
 	}
 
 	log.Println("Creating configuration files...")
+	exists := func(path string) bool {
+		// This is hacky, but good enough.
+		_, err := cfg.fs().Stat(path)
+		return err == nil
+	}
+
 	configFiles := []struct {
 		path     string
 		contents []byte
 	}{
-		{cfg.ConfigurationPath(), defaultConfigData},
-		{cfg.HostKeyPath(), privateKey},
-		{cfg.RootFsTarPath(), rootFsData},
+		{ConfigurationName, defaultConfigData},
+		{PrivateKeyName, privateKey},
+		{RootFSName, rootFsData},
 	}
 	for _, configFile := range configFiles {
 		if !exists(configFile.path) {
 			log.Println("  ", configFile.path)
-			if err := ioutil.WriteFile(configFile.path, configFile.contents, 0600); err != nil {
+			if err := afero.WriteFile(cfg.fs(), ConfigurationName, configFile.contents, 0600); err != nil {
 				return fmt.Errorf("couldn't write configuration file to %q: %v", configFile.path, err)
 			}
 		} else {
@@ -58,23 +72,17 @@ func Initialize(path string) error {
 	// Make directories.
 	log.Println("Making directories...")
 	for _, dir := range []string{
-		cfg.DownloadPath(),
-		cfg.LogPath(),
+		DownloadDirName,
+		LogsDirName,
 	} {
 		log.Println("  ", dir)
-		if err := os.MkdirAll(dir, 0700); err != nil {
+		if err := cfg.fs().MkdirAll(dir, 0700); err != nil {
 			return fmt.Errorf("couldn't make directory %q: %v", dir, err)
 		}
 	}
 
 	// Create root FS tar.
 	return nil
-}
-
-func exists(path string) bool {
-	// This is hacky, but good enough.
-	_, err := os.Stat(path)
-	return err == nil
 }
 
 func generateRSAKey() ([]byte, error) {

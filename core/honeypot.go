@@ -9,8 +9,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -42,7 +40,6 @@ type Honeypot struct {
 	toClose       listCloser
 	logger        *logger.Logger
 	sshServer     *ssh.Server
-	logFd         os.File
 }
 
 type HoneypotOpts struct {
@@ -52,32 +49,34 @@ type HoneypotOpts struct {
 
 func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeypot, error) {
 	var toClose listCloser
+	var initialized bool
+	defer func() {
+		if !initialized {
+			toClose.Close()
+		}
+	}()
 
 	// Set up the filesystem.
-	fd, err := os.Open(configuration.RootFsTarPath())
+	fd, err := configuration.OpenFilesystemTarGz()
 	if err != nil {
-		toClose.Close()
 		return nil, err
 	}
 	toClose = append(toClose, fd)
 	gr, err := gzip.NewReader(fd)
 	if err != nil {
-		toClose.Close()
 		return nil, err
 	}
 	vfs, err := tarfs.New(tar.NewReader(gr))
 	if err != nil {
-		toClose.Close()
 		return nil, err
 	}
 
 	// Set up the app log
-	log.Printf("- Writing app logs to %s\n", configuration.AppLogPath())
-	logFd, err := os.OpenFile(configuration.AppLogPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFd, err := configuration.OpenAppLog()
 	if err != nil {
 		return nil, err
 	}
-
+	log.Printf("- Writing app logs to %s\n", logFd.Name())
 	toClose = append(toClose, logFd)
 
 	sharedOS := vos.NewSharedOS(vfs, vos.Utsname{
@@ -97,7 +96,6 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		sharedOS:      sharedOS,
 		toClose:       toClose,
 		logger:        logger.NewJsonLinesLogRecorder(io.MultiWriter(logFd, stderr)),
-		logFd:         *logFd,
 	}
 
 	honeypot.sshServer = &ssh.Server{
@@ -153,10 +151,14 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 		},
 	}
 
-	if keyPath := configuration.HostKeyPath(); keyPath != "" {
-		honeypot.sshServer.SetOption(ssh.HostKeyFile(keyPath))
+	keyData, err := configuration.PrivateKeyPem()
+	if err != nil {
+		toClose.Close()
+		return nil, err
 	}
+	honeypot.sshServer.SetOption(ssh.HostKeyPEM(keyData))
 
+	initialized = true
 	return honeypot, nil
 }
 
@@ -196,8 +198,6 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	})
 
 	// Set up I/O and loging.
-	logsDir := h.configuration.LogPath()
-	os.MkdirAll(logsDir, 0700)
 	logFileName := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339))
 	sessionLogger.Record(&logger.LogEntry_OpenTtyLog{
 		OpenTtyLog: &logger.OpenTTYLog{
@@ -205,8 +205,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 		},
 	})
 
-	logName := filepath.Join(logsDir, logFileName)
-	logFd, err := os.Create(logName)
+	logFd, err := h.configuration.CreateSessionLog(logFileName)
 	if err != nil {
 		return err
 	}
@@ -287,7 +286,6 @@ func (h *Honeypot) Shutdown(ctx context.Context) error {
 		},
 	})
 
-	h.logFd.Sync()
 	return h.sshServer.Shutdown(ctx)
 }
 

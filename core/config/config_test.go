@@ -26,6 +26,9 @@ func TestBuiltinConfig(t *testing.T) {
 		jsonTag := field.Tag.Get("json")
 		assert.NotEmpty(t, jsonTag)
 		jsonField := strings.Split(jsonTag, ",")[0]
+		if jsonField == "-" {
+			continue
+		}
 		knownFields[jsonField] = true
 
 		if _, ok := rawConfig[jsonField]; !ok {

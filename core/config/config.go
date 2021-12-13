@@ -2,9 +2,10 @@ package config
 
 import (
 	_ "embed"
+	"os"
 	"path/filepath"
-	"sync"
 
+	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
 
@@ -16,12 +17,18 @@ var (
 	rootFsData []byte
 )
 
-const ConfigurationName = "config.yaml"
+const (
+	ConfigurationName = "config.yaml"
+	DownloadDirName   = "downloads"
+	LogsDirName       = "session_logs"
+	PrivateKeyName    = "private_key"
+	RootFSName        = "root_fs.tar.gz"
+	AppLogName        = "app.log"
+)
 
 type Configuration struct {
 	configurationDir string
-	passwordLock     sync.Mutex
-	cachedPasswords  map[string][]string
+	configFs         afero.Fs
 
 	Motd             string `json:"motd"`
 	SSHPort          int    `json:"ssh_port"`
@@ -43,36 +50,39 @@ type User struct {
 	Passwords []string `json:"passwords"`
 }
 
-func (c *Configuration) ConfigurationPath() string {
-	return filepath.Join(c.configurationDir, ConfigurationName)
+func (c *Configuration) fs() afero.Fs {
+	if c.configFs != nil {
+		return c.configFs
+	}
+
+	return afero.NewBasePathFs(afero.NewOsFs(), c.configurationDir)
 }
 
-// DownloadPath holds the path to the downloads relative to the configuraiton.
-func (c *Configuration) DownloadPath() string {
-	return filepath.Join(c.configurationDir, "downloads")
+// Create a download with the given name.
+func (c *Configuration) CreateDownload(name string) (afero.File, error) {
+	toCreate := filepath.Join(DownloadDirName, name)
+	return c.fs().Create(toCreate)
 }
 
-// LogPath holds the path to the CLI interaction logs.
-func (c *Configuration) LogPath() string {
-	return filepath.Join(c.configurationDir, "logs")
+func (c *Configuration) CreateSessionLog(name string) (afero.File, error) {
+	toCreate := filepath.Join(LogsDirName, name)
+	return c.fs().Create(toCreate)
 }
 
-// AppLogPath holds the path to the application interaction logs.
-func (c *Configuration) AppLogPath() string {
-	return filepath.Join(c.configurationDir, "app.log")
+// PrivateKeyPem returns the bytes of the private key.
+func (c *Configuration) PrivateKeyPem() ([]byte, error) {
+	return afero.ReadFile(c.fs(), PrivateKeyName)
 }
 
-// HostKeyPath holds the path to the host keys.
-func (c *Configuration) HostKeyPath() string {
-	return filepath.Join(c.configurationDir, "private_key")
+// OpenAppLog opens the application log in an append only state.
+func (c *Configuration) OpenAppLog() (afero.File, error) {
+	return c.fs().OpenFile(AppLogName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 }
 
-// RootFsTarPath holds the path to the root FS.
-func (c *Configuration) RootFsTarPath() string {
-	return filepath.Join(c.configurationDir, "root_fs.tar.gz")
+// OpenFilesystemTarGz opens the backing filesystem .tar.gz file.
+func (c *Configuration) OpenFilesystemTarGz() (afero.File, error) {
+	return c.fs().Open(RootFSName)
 }
-
-type passwordsData map[string][]string
 
 // GetPasswords returns allowable passwords for the given username.
 func (c *Configuration) GetPasswords(username string) []string {

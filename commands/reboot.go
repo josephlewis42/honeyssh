@@ -15,8 +15,7 @@ func Reboot(virtOS vos.VOS) int {
 
 	return cmd.Run(virtOS, func() int {
 		// Broadcast to SSHStdout to bypass others like `wall` would do
-		host, _ := virtOS.Hostname()
-		fmt.Fprintf(virtOS.SSHStdout(), "Broadcast message from root@%s:\n", host)
+		fmt.Fprintf(virtOS.SSHStdout(), "Broadcast message from root@%s:\n", virtOS.Hostname())
 		fmt.Fprintln(virtOS.SSHStdout(), "The system is going down for reboot NOW!")
 		virtOS.SSHExit(0)
 		return 0

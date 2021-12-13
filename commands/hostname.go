@@ -16,13 +16,7 @@ func Hostname(virtOS vos.VOS) int {
 	}
 
 	return cmd.Run(virtOS, func() int {
-		host, err := virtOS.Hostname()
-		if err != nil {
-			fmt.Fprintf(virtOS.Stderr(), "hostname: %v\n", err)
-			return 1
-		}
-
-		fmt.Fprintln(virtOS.Stdout(), host)
+		fmt.Fprintln(virtOS.Stdout(), virtOS.Hostname())
 		return 0
 	})
 }

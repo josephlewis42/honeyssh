@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -119,9 +118,7 @@ func Wget(virtOS vos.VOS) int {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		downloadDest := virtOS.DownloadPath(parsedURL.String())
-
-		downloadFd, err := os.Create(downloadDest)
+		downloadFd, err := virtOS.DownloadPath(parsedURL.String())
 		if err != nil {
 			return errors.New("couldn't create output file")
 		}
