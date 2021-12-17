@@ -3,7 +3,7 @@ Display system informamtion.
 
 Flags:
  -a, --all          print all information
- -h, --help         show help
+ -h, --help         show this help and exit
  -m, --machine      print the machine name
  -n, --nodename     print the network node name
  -r, --kernel-release

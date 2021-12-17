@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"flag"
 	"fmt"
 
 	"josephlewis.net/osshit/core/vos"
@@ -9,26 +8,21 @@ import (
 
 // Which implements the UNIX which command.
 func Which(virtOS vos.VOS) int {
-	flags := flag.NewFlagSet("which", flag.ContinueOnError)
-	flags.SetOutput(virtOS.Stderr())
-	if err := flags.Parse(virtOS.Args()[1:]); err != nil {
-		virtOS.LogInvalidInvocation(err)
-
-		fmt.Fprintln(virtOS.Stderr(), "Usage: which args")
-		fmt.Fprintln(virtOS.Stderr(), "Locate a command.")
-		return 1
+	cmd := &SimpleCommand{
+		Use:   "which [COMMAND...]",
+		Short: "Locate a command.",
+		// Never bail, even if args are bad.
+		NeverBail: true,
 	}
 
-	for _, arg := range flags.Args() {
+	return cmd.RunEachArg(virtOS, func(arg string) error {
 		res, err := vos.LookPath(virtOS, arg)
-		if err == nil {
-			fmt.Fprintln(virtOS.Stdout(), res)
-		} else {
-			fmt.Fprintln(virtOS.Stderr(), err)
+		if err != nil {
+			return err
 		}
-	}
-
-	return 0
+		fmt.Fprintln(virtOS.Stdout(), res)
+		return nil
+	})
 }
 
 var _ vos.ProcessFunc = Which

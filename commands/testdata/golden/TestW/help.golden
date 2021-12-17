@@ -1,3 +1,5 @@
-03:04:05 up 0 days,  00:00,  1 user,  load average: 0.08, 0.02, 0.01
-USER            TTY    FROM        LOGIN@  IDLE   JCPU   CPU    WHAT
-$SSHLOGINUSER$  pts/0  8.8.8.8/32  03:04   0.00s  0.00s  0.00s  w
+usage: w
+Show who is logged in and what they're doing.
+
+Flags:
+ -h, --help  show this help and exit

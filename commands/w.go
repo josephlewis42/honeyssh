@@ -9,19 +9,28 @@ import (
 
 // W implements the UNIX w command.
 func W(virtOS vos.VOS) int {
-	Uptime(virtOS)
+	cmd := &SimpleCommand{
+		Use:   "w",
+		Short: "Show who is logged in and what they're doing.",
+		// Never bail, even if args are bad.
+		NeverBail: true,
+	}
 
-	w := tabwriter.NewWriter(virtOS.Stdout(), 0, 8, 2, ' ', 0)
-	defer w.Flush()
-	fmt.Fprintln(w, "USER\tTTY\tFROM\tLOGIN@\tIDLE\tJCPU\tCPU\tWHAT")
-	// TODO: lookup username
-	fmt.Fprintf(w, "%s\tpts/0\t%s\t%s\t0.00s\t0.00s\t0.00s\tw\n",
-		virtOS.SSHUser(),
-		virtOS.SSHRemoteAddr(),
-		virtOS.LoginTime().Format("15:04"),
-	)
+	return cmd.Run(virtOS, func() int {
+		fmt.Fprintln(virtOS.Stdout(), formatUptime(virtOS))
 
-	return 0
+		w := tabwriter.NewWriter(virtOS.Stdout(), 0, 8, 2, ' ', 0)
+		defer w.Flush()
+		fmt.Fprintln(w, "USER\tTTY\tFROM\tLOGIN@\tIDLE\tJCPU\tCPU\tWHAT")
+		// TODO: lookup username
+		fmt.Fprintf(w, "%s\tpts/0\t%s\t%s\t0.00s\t0.00s\t0.00s\tw\n",
+			virtOS.SSHUser(),
+			virtOS.SSHRemoteAddr(),
+			virtOS.LoginTime().Format("15:04"),
+		)
+
+		return 0
+	})
 }
 
 var _ vos.ProcessFunc = W
