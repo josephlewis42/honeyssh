@@ -1,0 +1,5 @@
+usage: cat [OPTION]... [FILE]...
+Concatenate FILE(s) to standard output.
+
+Flags:
+ -h, --help  show this help and exit

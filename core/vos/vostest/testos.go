@@ -109,7 +109,7 @@ func (c *Cmd) Run() error {
 	runner, err := c.VOS.StartProcess(c.Argv[0], c.Argv, &vos.ProcAttr{
 		Dir:   c.Dir,
 		Env:   c.Env,
-		Files: vos.NewVIOAdapter(io.NopCloser(c.Stdin), writeCloser{c.Stdout}, writeCloser{c.Stderr}),
+		Files: vos.NewVIOAdapter(io.NopCloser(c.Stdin), newWriteCloser(c.Stdout), newWriteCloser(c.Stderr)),
 	})
 	if err != nil {
 		return err
@@ -123,6 +123,13 @@ func (c *Cmd) Run() error {
 
 	c.ExitStatus = runner.Run()
 	return nil
+}
+
+func newWriteCloser(w io.Writer) io.WriteCloser {
+	if w == nil {
+		return nil
+	}
+	return &writeCloser{w}
 }
 
 type writeCloser struct{ io.Writer }

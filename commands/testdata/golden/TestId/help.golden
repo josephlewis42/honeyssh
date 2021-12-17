@@ -1,0 +1,5 @@
+usage: id [OPTION]... [USER]
+Get the user's identity.
+
+Flags:
+ -h, --help  show this help and exit
