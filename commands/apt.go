@@ -93,9 +93,9 @@ func Apt(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Apt
+var _ vos.ProcessFunc = Apt
 
 func init() {
-	addBinCmd("apt", HoneypotCommandFunc(Apt))
-	addBinCmd("apt-get", HoneypotCommandFunc(Apt))
+	addBinCmd("apt", Apt)
+	addBinCmd("apt-get", Apt)
 }

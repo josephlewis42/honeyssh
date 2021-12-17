@@ -25,7 +25,7 @@ func Pwd(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = Pwd
+var _ vos.ProcessFunc = Pwd
 
 func init() {
 	addBinCmd("pwd", Pwd)

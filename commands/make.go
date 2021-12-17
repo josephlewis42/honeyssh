@@ -24,7 +24,7 @@ func Make(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Make
+var _ vos.ProcessFunc = Make
 
 func init() {
 	addBinCmd("make", Make)

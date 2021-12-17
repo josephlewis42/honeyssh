@@ -87,8 +87,8 @@ func Rmdir(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Rmdir
+var _ vos.ProcessFunc = Rmdir
 
 func init() {
-	addBinCmd("rmdir", HoneypotCommandFunc(Rmdir))
+	addBinCmd("rmdir", Rmdir)
 }

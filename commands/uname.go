@@ -64,8 +64,8 @@ func Uname(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = Uname
+var _ vos.ProcessFunc = Uname
 
 func init() {
-	addBinCmd("uname", HoneypotCommandFunc(Uname))
+	addBinCmd("uname", Uname)
 }

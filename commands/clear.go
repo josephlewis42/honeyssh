@@ -24,7 +24,7 @@ func Clear(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Clear
+var _ vos.ProcessFunc = Clear
 
 func init() {
 	addBinCmd("clear", Clear)

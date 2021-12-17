@@ -31,8 +31,8 @@ func Which(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = Which
+var _ vos.ProcessFunc = Which
 
 func init() {
-	addBinCmd("which", HoneypotCommandFunc(Which))
+	addBinCmd("which", Which)
 }

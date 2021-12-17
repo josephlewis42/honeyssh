@@ -291,8 +291,8 @@ func getUIDGID(fileInfo os.FileInfo) (uid, gid int) {
 	}
 }
 
-var _ HoneypotCommandFunc = Ls
+var _ vos.ProcessFunc = Ls
 
 func init() {
-	addBinCmd("ls", HoneypotCommandFunc(Ls))
+	addBinCmd("ls", Ls)
 }

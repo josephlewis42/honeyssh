@@ -23,8 +23,8 @@ func Python(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Python
+var _ vos.ProcessFunc = Python
 
 func init() {
-	addBinCmd("python", HoneypotCommandFunc(Python))
+	addBinCmd("python", Python)
 }

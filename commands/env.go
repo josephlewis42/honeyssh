@@ -24,7 +24,7 @@ func Env(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Env
+var _ vos.ProcessFunc = Env
 
 func init() {
 	addBinCmd("env", Env)

@@ -54,7 +54,7 @@ func Rm(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Rm
+var _ vos.ProcessFunc = Rm
 
 func init() {
 	addBinCmd("rm", Rm)

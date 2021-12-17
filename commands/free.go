@@ -38,7 +38,7 @@ Swap:      24587768     4301240    20286528`)
 	})
 }
 
-var _ HoneypotCommandFunc = Free
+var _ vos.ProcessFunc = Free
 
 func init() {
 	addBinCmd("free", Free)

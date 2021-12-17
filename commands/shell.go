@@ -239,5 +239,5 @@ func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
 }
 
 func init() {
-	addBinCmd("sh", HoneypotCommandFunc(RunShell))
+	addBinCmd("sh", RunShell)
 }

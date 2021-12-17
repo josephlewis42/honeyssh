@@ -20,8 +20,8 @@ func Screen(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Screen
+var _ vos.ProcessFunc = Screen
 
 func init() {
-	addBinCmd("screen", HoneypotCommandFunc(Screen))
+	addBinCmd("screen", Screen)
 }

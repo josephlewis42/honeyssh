@@ -40,7 +40,7 @@ func Nice(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Nice
+var _ vos.ProcessFunc = Nice
 
 func init() {
 	addBinCmd("nice", Nice)

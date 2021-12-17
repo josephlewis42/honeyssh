@@ -55,8 +55,8 @@ func Touch(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Touch
+var _ vos.ProcessFunc = Touch
 
 func init() {
-	addBinCmd("touch", HoneypotCommandFunc(Touch))
+	addBinCmd("touch", Touch)
 }

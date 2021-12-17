@@ -24,9 +24,9 @@ func W(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = W
+var _ vos.ProcessFunc = W
 
 func init() {
-	addBinCmd("w", HoneypotCommandFunc(W))
-	addBinCmd("who", HoneypotCommandFunc(W))
+	addBinCmd("w", W)
+	addBinCmd("who", W)
 }

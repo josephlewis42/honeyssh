@@ -99,7 +99,7 @@ func Tar(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Tar
+var _ vos.ProcessFunc = Tar
 
 func init() {
 	addBinCmd("tar", Tar)

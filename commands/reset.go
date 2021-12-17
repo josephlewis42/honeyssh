@@ -24,7 +24,7 @@ func Reset(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Reset
+var _ vos.ProcessFunc = Reset
 
 func init() {
 	addBinCmd("reset", Reset)

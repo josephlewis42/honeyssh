@@ -238,5 +238,5 @@ func (c *countWriter) UpdateOutput() {
 }
 
 func init() {
-	addBinCmd("wget", HoneypotCommandFunc(Wget))
+	addBinCmd("wget", Wget)
 }

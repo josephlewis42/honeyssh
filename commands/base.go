@@ -14,21 +14,19 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-type HoneypotCommandFunc = vos.ProcessFunc
-
 // AllCommands holds a list of all registered commands
-var AllCommands = make(map[string]HoneypotCommandFunc)
+var AllCommands = make(map[string]vos.ProcessFunc)
 
 // BuiltinProcessResolver implemnts vos.ProcessResolver, it returns the builtin
 // command with the given path or nil if none exists.
-func BuiltinProcessResolver(command string) HoneypotCommandFunc {
+func BuiltinProcessResolver(command string) vos.ProcessFunc {
 	return AllCommands[command]
 }
 
 var _ vos.ProcessResolver = BuiltinProcessResolver
 
 // addBinCmd adds a command under /bin and /usr/bin.
-func addBinCmd(name string, cmd HoneypotCommandFunc) {
+func addBinCmd(name string, cmd vos.ProcessFunc) {
 	AllCommands[path.Join("/bin", name)] = cmd
 	AllCommands[path.Join("/usr/bin", name)] = cmd
 }

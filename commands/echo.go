@@ -73,6 +73,8 @@ func Echo(virtOS vos.VOS) int {
 	})
 }
 
+var _ vos.ProcessFunc = Echo
+
 func init() {
 	addBinCmd("echo", Echo)
 }

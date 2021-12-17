@@ -24,8 +24,8 @@ func Mail(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Mail
+var _ vos.ProcessFunc = Mail
 
 func init() {
-	addBinCmd("mail", HoneypotCommandFunc(Mail))
+	addBinCmd("mail", Mail)
 }

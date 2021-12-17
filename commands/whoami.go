@@ -23,8 +23,8 @@ func Whoami(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Whoami
+var _ vos.ProcessFunc = Whoami
 
 func init() {
-	addBinCmd("whoami", HoneypotCommandFunc(Whoami))
+	addBinCmd("whoami", Whoami)
 }

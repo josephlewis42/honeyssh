@@ -23,7 +23,7 @@ func Php(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Php
+var _ vos.ProcessFunc = Php
 
 func init() {
 	addBinCmd("php", Php)

@@ -136,8 +136,8 @@ func Chmod(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = Chmod
+var _ vos.ProcessFunc = Chmod
 
 func init() {
-	addBinCmd("chmod", HoneypotCommandFunc(Chmod))
+	addBinCmd("chmod", Chmod)
 }

@@ -191,9 +191,9 @@ func Ip(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Ifconfig
+var _ vos.ProcessFunc = Ifconfig
 
 func init() {
-	addSbinCmd("ifconfig", HoneypotCommandFunc(Ifconfig))
-	addSbinCmd("ip", HoneypotCommandFunc(Ip))
+	addSbinCmd("ifconfig", Ifconfig)
+	addSbinCmd("ip", Ip)
 }

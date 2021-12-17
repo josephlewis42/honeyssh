@@ -30,8 +30,8 @@ func Uptime(virtOS vos.VOS) int {
 	return 0
 }
 
-var _ HoneypotCommandFunc = Uptime
+var _ vos.ProcessFunc = Uptime
 
 func init() {
-	addBinCmd("uptime", HoneypotCommandFunc(Uptime))
+	addBinCmd("uptime", Uptime)
 }

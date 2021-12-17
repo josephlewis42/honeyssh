@@ -23,7 +23,7 @@ func Perl(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Perl
+var _ vos.ProcessFunc = Perl
 
 func init() {
 	addBinCmd("perl", Perl)

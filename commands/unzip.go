@@ -84,7 +84,7 @@ func Unzip(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Unzip
+var _ vos.ProcessFunc = Unzip
 
 func init() {
 	addBinCmd("unzip", Unzip)

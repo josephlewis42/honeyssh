@@ -56,7 +56,7 @@ func Mkdir(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Mkdir
+var _ vos.ProcessFunc = Mkdir
 
 func init() {
 	addBinCmd("mkdir", Mkdir)

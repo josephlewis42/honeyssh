@@ -69,7 +69,7 @@ func Passwd(virtualOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Passwd
+var _ vos.ProcessFunc = Passwd
 
 func init() {
 	addBinCmd("passwd", Passwd)

@@ -21,7 +21,7 @@ func Kill(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Kill
+var _ vos.ProcessFunc = Kill
 
 func init() {
 	addBinCmd("kill", Kill)

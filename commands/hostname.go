@@ -21,7 +21,7 @@ func Hostname(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Hostname
+var _ vos.ProcessFunc = Hostname
 
 func init() {
 	addBinCmd("hostname", Hostname)

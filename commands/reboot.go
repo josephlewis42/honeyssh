@@ -22,8 +22,8 @@ func Reboot(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Reboot
+var _ vos.ProcessFunc = Reboot
 
 func init() {
-	addSbinCmd("reboot", HoneypotCommandFunc(Reboot))
+	addSbinCmd("reboot", Reboot)
 }

@@ -27,7 +27,7 @@ func Cat(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Cat
+var _ vos.ProcessFunc = Cat
 
 func init() {
 	addBinCmd("cat", Cat)
