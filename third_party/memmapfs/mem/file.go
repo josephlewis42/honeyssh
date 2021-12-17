@@ -48,6 +48,8 @@ func (f File) Data() *FileData {
 	return f.fileData
 }
 
+type TimeSource func() time.Time
+
 type FileData struct {
 	sync.Mutex
 	name    string
@@ -58,6 +60,8 @@ type FileData struct {
 	modtime time.Time
 	uid     int
 	gid     int
+
+	timeSource TimeSource
 }
 
 func (d *FileData) Name() string {
@@ -66,12 +70,12 @@ func (d *FileData) Name() string {
 	return d.name
 }
 
-func CreateFile(name string, timeSource func() time.Time) *FileData {
-	return &FileData{name: name, mode: os.ModeTemporary, modtime: timeSource()}
+func CreateFile(name string, timeSource TimeSource) *FileData {
+	return &FileData{name: name, mode: os.ModeTemporary, modtime: timeSource(), timeSource: timeSource}
 }
 
-func CreateDir(name string, timeSource func() time.Time) *FileData {
-	return &FileData{name: name, memDir: &DirMap{}, dir: true, modtime: timeSource()}
+func CreateDir(name string, timeSource TimeSource) *FileData {
+	return &FileData{name: name, memDir: &DirMap{}, dir: true, modtime: timeSource(), timeSource: timeSource}
 }
 
 func ChangeFileName(f *FileData, newname string) {
@@ -125,7 +129,7 @@ func (f *File) Close() error {
 	f.fileData.Lock()
 	f.closed = true
 	if !f.readOnly {
-		setModTime(f.fileData, time.Now())
+		setModTime(f.fileData, f.fileData.timeSource())
 	}
 	f.fileData.Unlock()
 	return nil
@@ -231,7 +235,7 @@ func (f *File) Truncate(size int64) error {
 	} else {
 		f.fileData.data = f.fileData.data[0:size]
 	}
-	setModTime(f.fileData, time.Now())
+	setModTime(f.fileData, f.fileData.timeSource())
 	return nil
 }
 
@@ -273,7 +277,7 @@ func (f *File) Write(b []byte) (n int, err error) {
 		f.fileData.data = append(f.fileData.data[:cur], b...)
 		f.fileData.data = append(f.fileData.data, tail...)
 	}
-	setModTime(f.fileData, time.Now())
+	setModTime(f.fileData, f.fileData.timeSource())
 
 	atomic.AddInt64(&f.at, int64(n))
 	return

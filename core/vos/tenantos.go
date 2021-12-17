@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/logger"
-	"josephlewis.net/osshit/third_party/cowfs"
 )
 
 type TenantOS struct {
@@ -42,8 +41,7 @@ type SSHSession interface {
 }
 
 func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session SSHSession) *TenantOS {
-	lfsMemfs := NewLinkingFs(afero.NewMemMapFs())
-	ufs := cowfs.NewCopyOnWriteFs(sharedOS.ReadOnlyFs(), lfsMemfs)
+	ufs := NewMemCopyOnWriteFs(sharedOS.ReadOnlyFs(), sharedOS.timeSource)
 
 	return &TenantOS{
 		sharedOS:      sharedOS,
