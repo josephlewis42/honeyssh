@@ -223,6 +223,12 @@ func (ea *TenantProcOS) LogInvalidInvocation(err error) {
 }
 
 func (ea *TenantProcOS) findHoneypotCommand(execPath string) (ProcessFunc, string, error) {
+	// Try to short-circuit the location logic.
+	cmd := ea.TenantOS.sharedOS.processResolver(execPath)
+	if cmd != nil {
+		return cmd, execPath, nil
+	}
+
 	switch {
 	case !strings.Contains(execPath, "/"):
 		// Not a fully qualified command path try under all $PATHs.

@@ -15,7 +15,9 @@ type ProcessFunc func(VOS) int
 // no process was found.
 type ProcessResolver func(path string) ProcessFunc
 
-func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Configuration) *SharedOS {
+type TimeSource func() time.Time
+
+func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Configuration, timeSource TimeSource) *SharedOS {
 	return &SharedOS{
 		Utsname: Utsname{
 			Sysname:    config.Uname.KernelName,
@@ -27,9 +29,10 @@ func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Config
 		},
 		mockFS:          baseFS,
 		mockPID:         0,
-		bootTime:        time.Now(),
+		bootTime:        timeSource(),
 		processResolver: procResolver,
 		config:          config,
+		timeSource:      timeSource,
 	}
 }
 
@@ -50,6 +53,8 @@ type SharedOS struct {
 	processResolver ProcessResolver
 	// The user supplied configuration
 	config *config.Configuration
+	// Timesource for the OS
+	timeSource TimeSource
 }
 
 // ReadOnlyFs returns a read only version of the base filesystem that multiple
@@ -65,8 +70,4 @@ func (s *SharedOS) NextPID() int {
 
 func (s *SharedOS) SetPID(pid int32) {
 	atomic.StoreInt32(&s.mockPID, pid)
-}
-
-func (s *SharedOS) SetBootTime(bootTime time.Time) {
-	s.bootTime = bootTime
 }

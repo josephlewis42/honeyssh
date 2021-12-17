@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core/config"
 )
@@ -13,7 +15,9 @@ var initCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		return config.Initialize(".")
+		logger := log.New(cmd.ErrOrStderr(), "", 0)
+
+		return config.Initialize(".", logger)
 	},
 }
 

@@ -12,6 +12,15 @@ type VIOAdapter struct {
 }
 
 func NewVIOAdapter(stdin io.ReadCloser, stdout, stderr io.WriteCloser) *VIOAdapter {
+	if stdin == nil {
+		stdin = &devNull{}
+	}
+	if stdout == nil {
+		stdout = &devNull{}
+	}
+	if stderr == nil {
+		stderr = &devNull{}
+	}
 	return &VIOAdapter{
 		IStdin:  stdin,
 		IStdout: stdout,
@@ -22,7 +31,7 @@ func NewVIOAdapter(stdin io.ReadCloser, stdout, stderr io.WriteCloser) *VIOAdapt
 // NewNullIO creates a valid /dev/null style I/O, reads won't work and
 // writes will be discarded.
 func NewNullIO() VIO {
-	return NewVIOAdapter(&devNull{}, &devNull{}, &devNull{})
+	return NewVIOAdapter(nil, nil, nil)
 }
 
 var _ VIO = (*VIOAdapter)(nil)

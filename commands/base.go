@@ -19,6 +19,14 @@ type HoneypotCommandFunc = vos.ProcessFunc
 // AllCommands holds a list of all registered commands
 var AllCommands = make(map[string]HoneypotCommandFunc)
 
+// BuiltinProcessResolver implemnts vos.ProcessResolver, it returns the builtin
+// command with the given path or nil if none exists.
+func BuiltinProcessResolver(command string) HoneypotCommandFunc {
+	return AllCommands[command]
+}
+
+var _ vos.ProcessResolver = BuiltinProcessResolver
+
 // addBinCmd adds a command under /bin and /usr/bin.
 func addBinCmd(name string, cmd HoneypotCommandFunc) {
 	AllCommands[path.Join("/bin", name)] = cmd

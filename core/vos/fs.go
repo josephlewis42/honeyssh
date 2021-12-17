@@ -1,7 +1,6 @@
 package vos
 
 import (
-	"archive/tar"
 	"errors"
 	"io/fs"
 	"os"
@@ -10,21 +9,11 @@ import (
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/third_party/cowfs"
 	"josephlewis.net/osshit/third_party/realpath"
-	"josephlewis.net/osshit/third_party/tarfs"
 )
 
-func NewCopyOnWriteFs(tarReader *tar.Reader) (VFS, error) {
-	base, err := tarfs.New(tarReader)
-	if err != nil {
-		return nil, err
-	}
-	roBase := afero.NewReadOnlyFs(base)
-
-	memFs := afero.NewMemMapFs()
-	lfsMemfs := NewLinkingFs(memFs)
-	ufs := cowfs.NewCopyOnWriteFs(roBase, lfsMemfs)
-
-	return ufs, nil
+func NewMemCopyOnWriteFs(base VFS) VFS {
+	lfsMemfs := NewLinkingFs(afero.NewMemMapFs())
+	return cowfs.NewCopyOnWriteFs(base, lfsMemfs)
 }
 
 func NewSymlinkResolvingRelativeFs(base VFS, Getwd func() (dir string)) VFS {

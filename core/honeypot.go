@@ -81,7 +81,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 
 	sharedOS := vos.NewSharedOS(vfs, func(processPath string) vos.ProcessFunc {
 		return commands.AllCommands[processPath]
-	}, configuration)
+	}, configuration, time.Now)
 	sharedOS.SetPID(4507)
 
 	honeypot := &Honeypot{

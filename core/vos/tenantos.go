@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/gliderlabs/ssh"
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/logger"
 	"josephlewis.net/osshit/third_party/cowfs"
@@ -35,7 +34,14 @@ type EventRecorder interface {
 	Record(event logger.LogType) error
 }
 
-func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session ssh.Session) *TenantOS {
+type SSHSession interface {
+	User() string
+	RemoteAddr() net.Addr
+	Exit(code int) error
+	Write([]byte) (int, error)
+}
+
+func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session SSHSession) *TenantOS {
 	lfsMemfs := NewLinkingFs(afero.NewMemMapFs())
 	ufs := cowfs.NewCopyOnWriteFs(sharedOS.ReadOnlyFs(), lfsMemfs)
 
@@ -43,7 +49,7 @@ func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session ssh.Se
 		sharedOS:      sharedOS,
 		fs:            ufs,
 		eventRecorder: eventRecorder,
-		loginTime:     time.Now(),
+		loginTime:     sharedOS.timeSource(),
 		user:          session.User(),
 		remoteAddr:    session.RemoteAddr(),
 		sshExit:       session.Exit,
@@ -135,7 +141,7 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 }
 
 func (t *TenantOS) DownloadPath(source string) (afero.File, error) {
-	base := time.Now().Format(time.RFC3339Nano)
+	base := t.sharedOS.timeSource().Format(time.RFC3339Nano)
 	// TODO also create a metadata file.
 
 	fd, err := t.sharedOS.config.CreateDownload(base)
@@ -154,5 +160,5 @@ func (t *TenantOS) DownloadPath(source string) (afero.File, error) {
 }
 
 func (t *TenantOS) Now() time.Time {
-	return time.Now()
+	return t.sharedOS.timeSource()
 }

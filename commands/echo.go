@@ -73,8 +73,6 @@ func Echo(virtOS vos.VOS) int {
 	})
 }
 
-var _ HoneypotCommandFunc = Echo
-
 func init() {
 	addBinCmd("echo", Echo)
 }
