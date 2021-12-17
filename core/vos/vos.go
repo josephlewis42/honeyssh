@@ -144,7 +144,6 @@ type VFS interface {
 	// happens.
 	Stat(name string) (os.FileInfo, error)
 
-	// The name of this FileSystem
 	Name() string
 
 	// Chmod changes the mode of the named file to mode.

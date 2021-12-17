@@ -6,10 +6,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/core/logger"
 	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/osshit/third_party/memmapfs"
 )
 
 type NopEventRecorder struct{}
@@ -37,19 +37,13 @@ func (f *FakeSSHSession) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func SingleProcessResolver(process vos.ProcessFunc) vos.ProcessResolver {
-	return func(path string) vos.ProcessFunc {
-		return process
-	}
-}
-
 func NewDeterministicOS(resolver vos.ProcessResolver) vos.VOS {
 	timeSource := func() time.Time {
 		// Go's reference timestmap with a different value in each position.
 		return time.Date(2006, 1, 2, 3, 4, 5, 0, time.UTC)
 	}
 
-	sharedOS := vos.NewSharedOS(afero.NewMemMapFs(), resolver, &config.Configuration{}, timeSource)
+	sharedOS := vos.NewSharedOS(memmapfs.NewMemMapFs(timeSource), resolver, &config.Configuration{}, timeSource)
 
 	tenantOS := vos.NewTenantOS(sharedOS, &NopEventRecorder{}, &FakeSSHSession{})
 	tenantOS.SetPTY(vos.PTY{})
@@ -77,14 +71,24 @@ type Cmd struct {
 
 	ExitStatus int
 
+	// VOS will be initialized after Command is called.
+	VOS vos.VOS
+
 	Setup func(vos.VOS) error
 }
 
+func (c *Cmd) processResolver(path string) vos.ProcessFunc {
+	return c.Process
+}
+
 func Command(process vos.ProcessFunc, name string, arg ...string) *Cmd {
-	return &Cmd{
+	cmd := &Cmd{
 		Process: process,
 		Argv:    append([]string{name}, arg...),
 	}
+	cmd.VOS = NewDeterministicOS(cmd.processResolver)
+
+	return cmd
 }
 
 func (c *Cmd) CombinedOutput() ([]byte, error) {
@@ -102,8 +106,7 @@ func (c *Cmd) CombinedOutput() ([]byte, error) {
 
 // Run starts the comand and waits for it to complete.
 func (c *Cmd) Run() error {
-	deterministicOS := NewDeterministicOS(SingleProcessResolver(c.Process))
-	runner, err := deterministicOS.StartProcess(c.Argv[0], c.Argv, &vos.ProcAttr{
+	runner, err := c.VOS.StartProcess(c.Argv[0], c.Argv, &vos.ProcAttr{
 		Dir:   c.Dir,
 		Env:   c.Env,
 		Files: vos.NewVIOAdapter(io.NopCloser(c.Stdin), writeCloser{c.Stdout}, writeCloser{c.Stderr}),

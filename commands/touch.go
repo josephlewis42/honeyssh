@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"time"
 
 	"josephlewis.net/osshit/core/vos"
 )
@@ -26,7 +25,7 @@ func Touch(virtOS vos.VOS) int {
 	return cmd.Run(virtOS, func() int {
 		paths := cmd.Flags().Args()
 
-		now := time.Now()
+		now := virtOS.Now()
 
 		var anyFailed bool
 		for _, path := range paths {

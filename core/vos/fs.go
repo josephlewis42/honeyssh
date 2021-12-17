@@ -8,11 +8,12 @@ import (
 
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/third_party/cowfs"
+	"josephlewis.net/osshit/third_party/memmapfs"
 	"josephlewis.net/osshit/third_party/realpath"
 )
 
-func NewMemCopyOnWriteFs(base VFS) VFS {
-	lfsMemfs := NewLinkingFs(afero.NewMemMapFs())
+func NewMemCopyOnWriteFs(base VFS, timeSource TimeSource) VFS {
+	lfsMemfs := NewLinkingFs(memmapfs.NewMemMapFs(timeSource))
 	return cowfs.NewCopyOnWriteFs(base, lfsMemfs)
 }
 

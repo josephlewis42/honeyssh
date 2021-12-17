@@ -1,0 +1,16 @@
+[
+  {
+    "command": [
+      "/bin/touch",
+      "foo"
+    ],
+    "output": ""
+  },
+  {
+    "command": [
+      "/bin/ls",
+      "-lah"
+    ],
+    "output": "total 0\n-rw-rw-rw- 1 root root 0 Dec 17 10:00 foo\n"
+  }
+]

@@ -69,7 +69,7 @@ var playgroundCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		fs := vos.NewMemCopyOnWriteFs(afero.NewReadOnlyFs(afero.NewOsFs()))
+		fs := vos.NewMemCopyOnWriteFs(afero.NewReadOnlyFs(afero.NewOsFs()), time.Now)
 
 		sharedOS := vos.NewSharedOS(fs, commands.BuiltinProcessResolver, &config.Configuration{}, time.Now)
 
