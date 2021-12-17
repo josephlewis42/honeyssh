@@ -61,7 +61,7 @@ func Initialize(path string, logger *log.Logger) error {
 	for _, configFile := range configFiles {
 		if !exists(configFile.path) {
 			logger.Println("  ", configFile.path)
-			if err := afero.WriteFile(cfg.fs(), ConfigurationName, configFile.contents, 0600); err != nil {
+			if err := afero.WriteFile(cfg.fs(), configFile.path, configFile.contents, 0600); err != nil {
 				return fmt.Errorf("couldn't write configuration file to %q: %v", configFile.path, err)
 			}
 		} else {

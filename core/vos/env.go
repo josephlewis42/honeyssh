@@ -56,11 +56,6 @@ type MapEnv struct {
 
 var _ VEnv = (*MapEnv)(nil)
 
-// UserHomeDir implements VEnv.UserHomeDir.
-func (m *MapEnv) UserHomeDir() (string, error) {
-	return m.Getenv("HOME"), nil
-}
-
 // Unsetenv implements VEnv.Unsetenv.
 func (m *MapEnv) Unsetenv(key string) error {
 	m.rw.Lock()

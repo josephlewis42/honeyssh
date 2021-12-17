@@ -125,7 +125,7 @@ func (s *Shell) Prompt() string {
 	prompt = strings.ReplaceAll(prompt, `\h`, s.VirtualOS.Getenv(EnvHostname))
 
 	pwd := s.VirtualOS.Getwd()
-	home, _ := s.VirtualOS.UserHomeDir()
+	home := s.VirtualOS.Getenv(EnvHome)
 	if strings.HasPrefix(pwd, home) {
 		pwd = "~" + strings.TrimPrefix(pwd, home)
 	}

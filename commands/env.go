@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 
 	"josephlewis.net/osshit/core/vos"
 )
@@ -16,7 +17,9 @@ func Env(virtOS vos.VOS) int {
 	}
 
 	return cmd.Run(virtOS, func() int {
-		for _, envDef := range virtOS.Environ() {
+		env := virtOS.Environ()
+		sort.Strings(env)
+		for _, envDef := range env {
 			fmt.Fprintln(virtOS.Stdout(), envDef)
 		}
 

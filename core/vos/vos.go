@@ -56,9 +56,6 @@ type VOS interface {
 
 // VEnv represents a virtual environment.
 type VEnv interface {
-	// UserHomeDir returns the current user's home directory.
-	UserHomeDir() (string, error)
-
 	// Unsetenv unsets a single environment variable.
 	Unsetenv(key string) error
 
