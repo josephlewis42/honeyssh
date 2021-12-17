@@ -1,0 +1,5 @@
+usage: hostname [hostname]
+Get or set the system's hostname.
+
+Flags:
+ -h, --help  show this help and exit

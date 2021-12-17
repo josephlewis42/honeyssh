@@ -1,0 +1,5 @@
+usage: whoami [OPTION]...
+Print the current user.
+
+Flags:
+ -h, --help  show this help and exit

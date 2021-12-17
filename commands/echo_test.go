@@ -1,11 +1,9 @@
 package commands
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"josephlewis.net/osshit/core/vos/vostest"
 )
 
 func TestUnescape(t *testing.T) {
@@ -36,56 +34,14 @@ func TestUnescape(t *testing.T) {
 	}
 }
 
-func ExampleEcho_help() {
-	cmd := vostest.Command(Echo, "echo", "--help")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		panic(err)
+func TestEcho(t *testing.T) {
+	cases := goldenTestSuite{
+		"no-arg":         {[]string{"echo"}},
+		"help":           {[]string{"echo", "--help"}},
+		"oneline":        {[]string{"echo", "Hello, world!"}},
+		"escape":         {[]string{"echo", "-e", `Hello\nworld!`}},
+		"multiple-items": {[]string{"echo", "a", "b", "c"}},
 	}
 
-	fmt.Println(string(out))
-
-	// Output: usage: echo [-e] [ARG] ...
-	// Display a line of text.
-	//
-	// Flags:
-	//  -e          interpret backslash escapes
-	//  -h, --help  show this help and exit
-}
-
-func ExampleEcho_echo() {
-	cmd := vostest.Command(Echo, "echo", "Hello, world!")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(out))
-
-	// Output: Hello, world!
-}
-
-func ExampleEcho_echoEscape() {
-	cmd := vostest.Command(Echo, "echo", "-e", `Hello\nworld!`)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(out))
-
-	// Output: Hello
-	// world!
-}
-
-func ExampleEcho_echoMultiple() {
-	cmd := vostest.Command(Echo, "echo", "a", "b", "c")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(out))
-
-	// Output: a b c
+	cases.Run(t, Echo)
 }

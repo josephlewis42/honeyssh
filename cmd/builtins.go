@@ -15,8 +15,8 @@ var builtinsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var builtins []string
 
-		for path, _ := range commands.AllCommands {
-			builtins = append(builtins, path)
+		for _, cmd := range commands.ListBuiltinCommands() {
+			builtins = append(builtins, cmd.Names...)
 		}
 
 		for cmd, _ := range commands.AllBuiltins {

@@ -1,0 +1,15 @@
+error: unknown option: -z
+
+usage: uname [OPTIONS...]
+Display system informamtion.
+
+Flags:
+ -a, --all          print all information
+ -h, --help         show help
+ -m, --machine      print the machine name
+ -n, --nodename     print the network node name
+ -r, --kernel-release
+                    print the kernel release
+ -s, --kernel-name  print the kernel name
+ -v, --kernel-version
+                    print the kernel version

@@ -1,0 +1,7 @@
+usage: free [OPTION]...
+Display amount of free and used memory in the system.
+
+Flags:
+ -?, --help  show help and exit
+ -h, --human-readable
+             print human readable sizes

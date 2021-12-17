@@ -1,0 +1,6 @@
+usage: echo [-e] [ARG] ...
+Display a line of text.
+
+Flags:
+ -e          interpret backslash escapes
+ -h, --help  show this help and exit

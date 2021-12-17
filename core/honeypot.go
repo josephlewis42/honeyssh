@@ -79,9 +79,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 	log.Printf("- Writing app logs to %s\n", logFd.Name())
 	toClose = append(toClose, logFd)
 
-	sharedOS := vos.NewSharedOS(vfs, func(processPath string) vos.ProcessFunc {
-		return commands.AllCommands[processPath]
-	}, configuration, time.Now)
+	sharedOS := vos.NewSharedOS(vfs, commands.BuiltinProcessResolver, configuration, time.Now)
 	sharedOS.SetPID(4507)
 
 	honeypot := &Honeypot{

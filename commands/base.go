@@ -14,27 +14,55 @@ import (
 	"josephlewis.net/osshit/core/vos"
 )
 
-// AllCommands holds a list of all registered commands
-var AllCommands = make(map[string]vos.ProcessFunc)
+// Always generate golden files on generate, a diff indicates a problem and
+// should be caught at code review or commit time.
+//go:generate go test . -update
+
+type CommandEntry struct {
+	Names []string
+	Proc  vos.ProcessFunc
+}
+
+type commandTable struct {
+	commands []CommandEntry
+	lookup   map[string]vos.ProcessFunc
+}
+
+func (ct *commandTable) AddCommand(proc vos.ProcessFunc, names ...string) {
+	ct.commands = append(ct.commands, CommandEntry{
+		Names: names,
+		Proc:  proc,
+	})
+	if ct.lookup == nil {
+		ct.lookup = make(map[string]vos.ProcessFunc)
+	}
+	for _, name := range names {
+		ct.lookup[name] = proc
+	}
+}
+
+var allCommands = commandTable{}
 
 // BuiltinProcessResolver implemnts vos.ProcessResolver, it returns the builtin
 // command with the given path or nil if none exists.
 func BuiltinProcessResolver(command string) vos.ProcessFunc {
-	return AllCommands[command]
+	return allCommands.lookup[command]
+}
+
+func ListBuiltinCommands() []CommandEntry {
+	return allCommands.commands
 }
 
 var _ vos.ProcessResolver = BuiltinProcessResolver
 
 // addBinCmd adds a command under /bin and /usr/bin.
 func addBinCmd(name string, cmd vos.ProcessFunc) {
-	AllCommands[path.Join("/bin", name)] = cmd
-	AllCommands[path.Join("/usr/bin", name)] = cmd
+	allCommands.AddCommand(cmd, path.Join("/bin", name), path.Join("/usr/bin", name))
 }
 
 // addSbinCmd adds a command under /sbin and /usr/sbin.
 func addSbinCmd(name string, cmd vos.ProcessFunc) {
-	AllCommands[path.Join("/sbin", name)] = cmd
-	AllCommands[path.Join("/usr/sbin", name)] = cmd
+	allCommands.AddCommand(cmd, path.Join("/sbin", name), path.Join("/usr/sbin", name))
 }
 
 func BytesToHuman(bytes int64) string {

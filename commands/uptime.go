@@ -9,7 +9,7 @@ import (
 
 // Uptime implements the UNIX uptime command.
 func Uptime(virtOS vos.VOS) int {
-	now := time.Now()
+	now := virtOS.Now()
 	uptime := virtOS.BootTime().Sub(now)
 	day := (24 * time.Hour)
 	uptimeDays := uptime / day
