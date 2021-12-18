@@ -1,10 +1,25 @@
 package cmd
 
 import (
+	"errors"
+	"io/fs"
+	"log"
+
 	"github.com/spf13/cobra"
+	"josephlewis.net/osshit/core/config"
 )
 
 var cfgPath string
+
+func loadConfig() (*config.Configuration, error) {
+	configuration, err := config.Load(cfgPath)
+
+	if errors.Is(err, fs.ErrNotExist) {
+		log.Println("Couldn't load config: did you run init?")
+	}
+
+	return configuration, err
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

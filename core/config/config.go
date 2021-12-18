@@ -89,6 +89,10 @@ func (c *Configuration) OpenAppLog() (afero.File, error) {
 	return c.fs().OpenFile(AppLogName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 }
 
+func (c *Configuration) ReadAppLog() (afero.File, error) {
+	return c.fs().OpenFile(AppLogName, os.O_RDONLY, 0600)
+}
+
 // OpenFilesystemTarGz opens the backing filesystem .tar.gz file.
 func (c *Configuration) OpenFilesystemTarGz() (afero.File, error) {
 	return c.fs().Open(RootFSName)

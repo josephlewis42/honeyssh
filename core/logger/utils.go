@@ -1,11 +1,12 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"time"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // LogRecorder is a callback that stores events in an external datastore.
@@ -22,7 +23,7 @@ type Logger struct {
 func NewJsonLinesLogRecorder(w io.Writer) *Logger {
 	return &Logger{
 		Record: func(le *LogEntry) error {
-			entry, err := json.Marshal(le)
+			entry, err := protojson.Marshal(le)
 			if err != nil {
 				return err
 			}

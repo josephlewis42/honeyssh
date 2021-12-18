@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
-	"io/fs"
 	"log"
 	"os"
 	"os/signal"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core"
-	"josephlewis.net/osshit/core/config"
 )
 
 // serveCmd represents the serve command
@@ -28,12 +25,8 @@ var serveCmd = &cobra.Command{
 		log.Println("Starting logger...")
 		logDest := cmd.ErrOrStderr()
 
-		configuration, err := config.Load(cfgPath)
-		switch {
-		case errors.Is(err, fs.ErrNotExist):
-			log.Println("Couldn't load config: did you run init?")
-			fallthrough
-		case err != nil:
+		configuration, err := loadConfig()
+		if err != nil {
 			return err
 		}
 

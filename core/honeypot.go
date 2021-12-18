@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -249,23 +248,14 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 
 func (h *Honeypot) ListenAndServe() error {
 	addr := fmt.Sprintf(":%d", h.configuration.SSHPort)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-	defer ln.Close()
-	return h.Serve(ln)
-}
-
-func (h *Honeypot) Serve(listener net.Listener) error {
-	log.Printf("- Starting SSH server on %v\n", listener.Addr())
+	log.Printf("- Starting SSH server on %v\n", addr)
 	h.logger.Sessionless().Record(&logger.LogEntry_HoneypotEvent{
 		HoneypotEvent: &logger.HoneypotEvent{
 			EventType: logger.HoneypotEvent_START,
 		},
 	})
 
-	return h.sshServer.Serve(listener)
+	return h.sshServer.ListenAndServe()
 }
 
 func (h *Honeypot) Shutdown(ctx context.Context) error {
