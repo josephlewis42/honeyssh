@@ -62,7 +62,7 @@ var wgetTransport = &http.Transport{
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   5 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
-	//DialContext:           wgetDialer.DialContext,
+	DialContext:           wgetDialer.DialContext,
 }
 
 var wgetHTTPClient = &http.Client{
