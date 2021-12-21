@@ -37,6 +37,8 @@ type Configuration struct {
 
 	GlobalPasswords []string `json:"global_passwords"`
 
+	OS OS `json:"os"`
+
 	Users []User `json:"users"`
 
 	Uname Uname `json:"uname"`
@@ -49,6 +51,11 @@ type User struct {
 	Home      string   `json:"home"`
 	Shell     string   `json:"shell"`
 	Passwords []string `json:"passwords"`
+}
+
+type OS struct {
+	DefaultShell string `json:"default_shell"`
+	DefaultPath  string `json:"default_path"`
 }
 
 type Uname struct {

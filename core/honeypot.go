@@ -204,9 +204,17 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	// Start logging the terminal interactions
 	vio := Record(vos.NewVIOAdapter(s, s, s), logFd)
 
+	procName := h.configuration.OS.DefaultShell
+	procArgs := []string{procName}
+	if remoteCommand := s.Command(); len(remoteCommand) > 0 {
+		procName = remoteCommand[0]
+		procArgs = remoteCommand
+	}
+
 	tenantOS := vos.NewTenantOS(h.sharedOS, sessionLogger, s)
-	shellOS, err := tenantOS.InitProc().StartProcess("/bin/sh", []string{"/bin/sh"}, &vos.ProcAttr{
-		Env:   s.Environ(),
+	loginProc := tenantOS.LoginProc()
+	shellOS, err := loginProc.StartProcess(procName, procArgs, &vos.ProcAttr{
+		Env:   append(loginProc.Environ(), s.Environ()...),
 		Files: vio,
 	})
 	if err != nil {

@@ -85,7 +85,7 @@ var playgroundCmd = &cobra.Command{
 			IsPTY:  true,
 		})
 
-		initProc := tenantOS.InitProc()
+		initProc := tenantOS.LoginProc()
 
 		runner, err := initProc.StartProcess("/bin/sh", []string{}, &vos.ProcAttr{
 			Dir:   "/",

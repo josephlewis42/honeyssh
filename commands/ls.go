@@ -237,6 +237,10 @@ func Dircolor(fileInfo os.FileInfo) *fcolor.Color {
 }
 
 func columnize(paths []fs.FileInfo, screenWidth int) []int {
+	if len(paths) == 0 {
+		return []int{0}
+	}
+
 	const colPadding = 2
 
 	numFiles := len(paths)
@@ -250,6 +254,9 @@ func columnize(paths []fs.FileInfo, screenWidth int) []int {
 	// Start with maximum number of columns and work down until all the data fits.
 	// 3 is the minimum column width, 1 char filename + 2 padding.
 	columns := screenWidth / (1 + colPadding)
+	if columns > len(paths) {
+		columns = len(paths)
+	}
 	var maximums []int // Holds maximum size of a name in the column.
 	for ; columns > 1; columns-- {
 		maximums = make([]int, columns)

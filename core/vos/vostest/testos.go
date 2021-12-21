@@ -48,7 +48,7 @@ func NewDeterministicOS(resolver vos.ProcessResolver) vos.VOS {
 	tenantOS := vos.NewTenantOS(sharedOS, &NopEventRecorder{}, &FakeSSHSession{})
 	tenantOS.SetPTY(vos.PTY{})
 
-	return tenantOS.InitProc()
+	return tenantOS.LoginProc()
 }
 
 // Cmd is similar to exec.Cmd.

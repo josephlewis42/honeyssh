@@ -82,22 +82,27 @@ func (t *TenantOS) GetPTY() PTY {
 	return t.pty
 }
 
-func (t *TenantOS) InitProc() *TenantProcOS {
+func (t *TenantOS) LoginProc() *TenantProcOS {
+	env := NewMapEnvFromEnvList(t.sharedOS.LoginEnv(t.user))
+	usr, _ := t.sharedOS.GetUser(t.user)
 	return &TenantProcOS{
 		TenantOS:       t,
 		VFS:            t.fs,
 		VIO:            NewNullIO(),
-		VEnv:           NewMapEnv(),
-		ExecutablePath: "/sbin/init",
-		ProcArgs:       []string{"/sbin/init"},
+		VEnv:           env,
+		ExecutablePath: "/sbin/sshd",
+		ProcArgs:       []string{"/sbin/sshd"},
 		PID:            0,
-		UID:            0,
-		Dir:            "/",
+		UID:            usr.UID,
+		Dir:            env.Getenv("PWD"),
 		Exec: func(_ VOS) int {
 			return 0
 		},
 	}
 }
+
+// TODO: add a LoginProc() to set the variables for the login process
+// it should set uid, gid, $SHELL, $PATH, $LOGNAME
 
 func (t *TenantOS) BootTime() time.Time {
 	return t.sharedOS.bootTime

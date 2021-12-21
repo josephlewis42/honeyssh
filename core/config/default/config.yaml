@@ -29,6 +29,11 @@ allow_any_password: false
 # List of passwords that work for any user.
 global_passwords: []
 
+# Configuration for the virtual OS
+os:
+  default_shell: "/bin/sh"
+  default_path: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 # List of users on the system. Each user has the following properties:
 #
 # - username: <string> # username of the user

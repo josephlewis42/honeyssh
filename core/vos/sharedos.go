@@ -71,3 +71,35 @@ func (s *SharedOS) NextPID() int {
 func (s *SharedOS) SetPID(pid int32) {
 	atomic.StoreInt32(&s.mockPID, pid)
 }
+
+func (s *SharedOS) LoginEnv(username string) []string {
+	mapEnv := NewMapEnv()
+
+	mapEnv.Setenv("SHELL", s.config.OS.DefaultShell)
+	mapEnv.Setenv("PATH", s.config.OS.DefaultPath)
+	mapEnv.Setenv("PWD", "/")
+	mapEnv.Setenv("HOME", "/")
+	mapEnv.Setenv("USER", username)
+	mapEnv.Setenv("LOGNAME", username)
+
+	if usr, ok := s.GetUser(username); ok {
+		if usr.Shell != "" {
+			mapEnv.Setenv("SHELL", usr.Shell)
+		}
+		if usr.Home != "" {
+			mapEnv.Setenv("PWD", usr.Home)
+			mapEnv.Setenv("HOME", usr.Home)
+		}
+	}
+
+	return mapEnv.Environ()
+}
+
+func (s *SharedOS) GetUser(username string) (usr config.User, ok bool) {
+	for _, usr = range s.config.Users {
+		if usr.Username == username {
+			return usr, true
+		}
+	}
+	return usr, false
+}

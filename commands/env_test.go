@@ -26,5 +26,5 @@ func TestEnv_contents(t *testing.T) {
 
 	assert.Equal(t, 0, cmd.ExitStatus, "exit code")
 	assert.Nil(t, err)
-	assert.Equal(t, "A=alpha\nB=bravo\nC=charlie\n", string(out))
+	assert.Equal(t, "A=alpha\nB=bravo\nC=charlie\nHOME=/\nLOGNAME=$SSHLOGINUSER$\nPATH=\nPWD=/\nSHELL=\nUSER=$SSHLOGINUSER$\n", string(out))
 }
