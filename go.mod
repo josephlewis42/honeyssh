@@ -20,6 +20,7 @@ require (
 )
 
 require (
+	github.com/bramvdbogaerde/go-scp v1.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
