@@ -18,6 +18,10 @@ func (*NopEventRecorder) Record(event logger.LogType) error {
 	return nil
 }
 
+func (*NopEventRecorder) SessionID() string {
+	return "$SSH_SESSION_ID$"
+}
+
 type FakeSSHSession struct {
 }
 

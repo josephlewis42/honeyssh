@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/logger"
 )
 
@@ -31,6 +30,7 @@ type TenantOS struct {
 
 type EventRecorder interface {
 	Record(event logger.LogType) error
+	SessionID() string
 }
 
 type SSHSession interface {
@@ -141,25 +141,6 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 	t.eventRecorder.Record(&logger.LogEntry_UsedCredentials{
 		UsedCredentials: creds,
 	})
-}
-
-func (t *TenantOS) DownloadPath(source string) (afero.File, error) {
-	base := t.sharedOS.timeSource().Format(time.RFC3339Nano)
-	// TODO also create a metadata file.
-
-	fd, err := t.sharedOS.config.CreateDownload(base)
-	if err != nil {
-		return nil, err
-	}
-
-	t.eventRecorder.Record(&logger.LogEntry_Download{
-		Download: &logger.Download{
-			Name:   base,
-			Source: source,
-		},
-	})
-
-	return fd, err
 }
 
 func (t *TenantOS) Now() time.Time {

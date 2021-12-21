@@ -3,7 +3,6 @@ package logger
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -43,8 +42,8 @@ func (l *Logger) recordLogType(sessionID string, event isLogEntry_LogType) error
 }
 
 // NewSession creates a logger with attached session ID.
-func (l *Logger) NewSession() *SessionLogger {
-	return &SessionLogger{Logger: l, sessionID: fmt.Sprintf("%d", rand.Uint64())}
+func (l *Logger) NewSession(sessionID string) *SessionLogger {
+	return &SessionLogger{Logger: l, sessionID: sessionID}
 }
 
 // NewSession creates a logger with attached session ID.
@@ -62,4 +61,8 @@ type LogType = isLogEntry_LogType
 
 func (l *SessionLogger) Record(event LogType) error {
 	return l.recordLogType(l.sessionID, event)
+}
+
+func (l *SessionLogger) SessionID() string {
+	return l.sessionID
 }

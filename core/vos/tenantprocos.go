@@ -1,13 +1,16 @@
 package vos
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
+	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/logger"
 )
 
@@ -251,6 +254,49 @@ func (ea *TenantProcOS) findHoneypotCommand(execPath string) (ProcessFunc, strin
 		}
 		return cmd, execPath, nil
 	}
+}
+
+type DownloadInfo struct {
+	Source    string   `json:"source"`
+	SessionID string   `json:"session_id"`
+	Cmd       []string `json:"cmd"`
+}
+
+func (t *TenantProcOS) DownloadPath(source string) (afero.File, error) {
+	base := t.sharedOS.timeSource().Format(time.RFC3339Nano)
+	// Write metadata with the download to prevent data loss.
+	{
+		di := &DownloadInfo{
+			Source:    source,
+			SessionID: t.TenantOS.eventRecorder.SessionID(),
+			Cmd:       t.Args(),
+		}
+		metadata, err := json.MarshalIndent(di, "", "    ")
+		if err != nil {
+			return nil, err
+		}
+
+		dfd, err := t.sharedOS.config.CreateDownload(base + "_metadata.json")
+		if err != nil {
+			return nil, err
+		}
+		defer dfd.Close()
+		dfd.Write(metadata)
+	}
+
+	fd, err := t.sharedOS.config.CreateDownload(base + ".download")
+	if err != nil {
+		return nil, err
+	}
+
+	t.eventRecorder.Record(&logger.LogEntry_Download{
+		Download: &logger.Download{
+			Name:   base,
+			Source: source,
+		},
+	})
+
+	return fd, err
 }
 
 func segfault(virtOS VOS) int {

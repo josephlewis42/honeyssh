@@ -157,7 +157,8 @@ func (h *Honeypot) Close() error {
 }
 
 func (h *Honeypot) HandleConnection(s ssh.Session) error {
-	sessionLogger := h.logger.NewSession()
+	sessionID := fmt.Sprintf("%d", time.Now().UnixNano())
+	sessionLogger := h.logger.NewSession(sessionID)
 
 	// Log panics to prevent a single connection from bringing down the whole
 	// process.
@@ -188,7 +189,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	})
 
 	// Set up I/O and loging.
-	logFileName := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339))
+	logFileName := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339Nano))
 	sessionLogger.Record(&logger.LogEntry_OpenTtyLog{
 		OpenTtyLog: &logger.OpenTTYLog{
 			Name: logFileName,
