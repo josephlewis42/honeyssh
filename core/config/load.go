@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
 
@@ -13,8 +14,12 @@ func Load(path string) (*Configuration, error) {
 	if filepath.Base(path) == ConfigurationName {
 		path = filepath.Dir(path)
 	}
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
 
-	configContents, err := ioutil.ReadFile(filepath.Join(path, ConfigurationName))
+	configContents, err := ioutil.ReadFile(filepath.Join(absPath, ConfigurationName))
 	if err != nil {
 		return nil, err
 	}
@@ -22,6 +27,10 @@ func Load(path string) (*Configuration, error) {
 	if err := yaml.UnmarshalStrict(configContents, &out); err != nil {
 		return nil, err
 	}
-	out.configurationDir = path
+	out.configFs = afero.NewBasePathFs(afero.NewOsFs(), absPath)
+
+	if err := out.Validate(); err != nil {
+		return nil, err
+	}
 	return &out, nil
 }

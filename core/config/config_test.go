@@ -44,7 +44,12 @@ func TestBuiltinConfig(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	// Will panic() on load failure because it should never happen at runtime.
-	assert.NotNil(t, defaultConfig())
+	dc := defaultConfig()
+	assert.NotNil(t, dc)
+
+	// Expect default config to be valid.
+	err := dc.Validate()
+	assert.Nil(t, err, "%s", err)
 }
 
 func TestFs(t *testing.T) {

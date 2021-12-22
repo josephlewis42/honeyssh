@@ -35,7 +35,7 @@ func Initialize(path string, logger *log.Logger) error {
 
 	// Set up configuration file.
 	cfg := defaultConfig()
-	cfg.configurationDir = full
+	cfg.configFs = afero.NewBasePathFs(afero.NewOsFs(), full)
 
 	logger.Println("Generating private key...")
 	privateKey, err := generateRSAKey(logger)
