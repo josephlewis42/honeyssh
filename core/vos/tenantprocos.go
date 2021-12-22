@@ -291,8 +291,9 @@ func (t *TenantProcOS) DownloadPath(source string) (afero.File, error) {
 
 	t.eventRecorder.Record(&logger.LogEntry_Download{
 		Download: &logger.Download{
-			Name:   base,
-			Source: source,
+			Name:    base,
+			Source:  source,
+			Command: t.Args(),
 		},
 	})
 

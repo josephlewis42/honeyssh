@@ -131,6 +131,8 @@ message Download {
   string name = 1;
   // Source of the download.
   string source = 2;
+  // Command that generated the download.
+  repeated string command = 3;
 }
 
 // Information about a panic.

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/core/logger"
+	"sigs.k8s.io/yaml"
 )
 
 var eventsCmd = &cobra.Command{
@@ -34,7 +35,12 @@ var reportCommand = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("%#v\n", report)
+		out, err := yaml.Marshal(report)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), string(out))
 
 		return nil
 	},
