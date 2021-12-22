@@ -34,7 +34,7 @@ func NewJsonLinesLogRecorder(w io.Writer) *Logger {
 
 func (l *Logger) recordLogType(sessionID string, event isLogEntry_LogType) error {
 	le := &LogEntry{}
-	le.TimestampMicros = time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+	le.TimestampMicros = time.Now().UnixMicro()
 	le.SessionId = sessionID
 	le.LogType = event
 
