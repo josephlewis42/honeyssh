@@ -2,6 +2,7 @@ package vos
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -34,11 +35,7 @@ type EnvironFetcher interface {
 }
 
 // NewMapEnvFrom creates a new environment with a copy of the environment
-// variables in the original environment.
-func NewMapEnvFrom(src EnvironFetcher) *MapEnv {
-	return NewMapEnvFromEnvList(src.Environ())
-}
-
+// variables from the given map.
 func NewMapEnvFromEnvList(environ []string) *MapEnv {
 	out := &MapEnv{}
 
@@ -100,6 +97,8 @@ func (m *MapEnv) Environ() []string {
 	for k, v := range m.env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
+
+	sort.Strings(env)
 
 	return env
 }

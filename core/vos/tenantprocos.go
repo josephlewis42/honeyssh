@@ -133,7 +133,7 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 
 	var env VEnv
 	if len(attr.Env) == 0 {
-		env = NewMapEnvFrom(ea.VEnv)
+		env = NewMapEnvFromEnvList(ea.VEnv.Environ())
 	} else {
 		env = NewMapEnvFromEnvList(attr.Env)
 	}
