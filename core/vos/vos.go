@@ -21,16 +21,6 @@ type Utsname struct {
 	Domainname string // NIS or YP domain name
 }
 
-func (u Utsname) Hostname() string {
-	return u.Nodename
-}
-
-func (u Utsname) Uname() Utsname {
-	return u
-}
-
-var _ VKernel = Utsname{}
-
 type VKernel interface {
 	Hostname() string
 	// Uname mimics the uname syscall.

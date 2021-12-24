@@ -19,14 +19,6 @@ type TimeSource func() time.Time
 
 func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Configuration, timeSource TimeSource) *SharedOS {
 	return &SharedOS{
-		Utsname: Utsname{
-			Sysname:    config.Uname.KernelName,
-			Nodename:   config.Uname.Nodename,
-			Release:    config.Uname.KernelRelease,
-			Version:    config.Uname.KernelVersion,
-			Machine:    config.Uname.HardwarePlatform,
-			Domainname: config.Uname.Domainname,
-		},
 		mockFS:          baseFS,
 		mockPID:         0,
 		bootTime:        timeSource(),
@@ -41,8 +33,6 @@ func NewSharedOS(baseFS VFS, procResolver ProcessResolver, config *config.Config
 // All public variables and methods no this type are guaranteed to produce
 // immutable objects.
 type SharedOS struct {
-	// Utsname holds the displayed OS info including hostname.
-	Utsname
 	// mockFS holds the base filesystem that is shared between ALL programs.
 	mockFS VFS
 	// mockPID contains the next PID of the system.
@@ -55,6 +45,21 @@ type SharedOS struct {
 	config *config.Configuration
 	// Timesource for the OS
 	timeSource TimeSource
+}
+
+func (s *SharedOS) Hostname() string {
+	return s.config.Uname.Nodename
+}
+
+func (s *SharedOS) Uname() Utsname {
+	return Utsname{
+		Sysname:    s.config.Uname.KernelName,
+		Nodename:   s.config.Uname.Nodename,
+		Release:    s.config.Uname.KernelRelease,
+		Version:    s.config.Uname.KernelVersion,
+		Machine:    s.config.Uname.HardwarePlatform,
+		Domainname: s.config.Uname.Domainname,
+	}
 }
 
 // ReadOnlyFs returns a read only version of the base filesystem that multiple
@@ -70,29 +75,6 @@ func (s *SharedOS) NextPID() int {
 
 func (s *SharedOS) SetPID(pid int32) {
 	atomic.StoreInt32(&s.mockPID, pid)
-}
-
-func (s *SharedOS) LoginEnv(username string) []string {
-	mapEnv := NewMapEnv()
-
-	mapEnv.Setenv("SHELL", s.config.OS.DefaultShell)
-	mapEnv.Setenv("PATH", s.config.OS.DefaultPath)
-	mapEnv.Setenv("PWD", "/")
-	mapEnv.Setenv("HOME", "/")
-	mapEnv.Setenv("USER", username)
-	mapEnv.Setenv("LOGNAME", username)
-
-	if usr, ok := s.GetUser(username); ok {
-		if usr.Shell != "" {
-			mapEnv.Setenv("SHELL", usr.Shell)
-		}
-		if usr.Home != "" {
-			mapEnv.Setenv("PWD", usr.Home)
-			mapEnv.Setenv("HOME", usr.Home)
-		}
-	}
-
-	return mapEnv.Environ()
 }
 
 func (s *SharedOS) GetUser(username string) (usr config.User, ok bool) {

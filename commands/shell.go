@@ -102,8 +102,6 @@ func (s *Shell) Init(username string) {
 	s.VirtualOS.Setenv(EnvHome, homedir)
 	// Use chdir in case the dir doesn't exist.
 	_ = s.VirtualOS.Chdir(homedir)
-
-	s.VirtualOS.Setenv(EnvPath, "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	host := s.VirtualOS.Hostname()
 	s.VirtualOS.Setenv(EnvHostname, host)
 	if s.VirtualOS.GetPTY().IsPTY {

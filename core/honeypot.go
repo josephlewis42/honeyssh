@@ -213,15 +213,6 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	}
 
 	tenantOS := vos.NewTenantOS(h.sharedOS, sessionLogger, s)
-	loginProc := tenantOS.LoginProc()
-	shellOS, err := loginProc.StartProcess(procName, procArgs, &vos.ProcAttr{
-		Env:   append(loginProc.Environ(), s.Environ()...),
-		Files: vio,
-	})
-	if err != nil {
-		return err
-	}
-
 	// Watch for window changes.
 	{
 		ptyInfo, winch, isPTY := s.Pty()
@@ -248,6 +239,15 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 				}
 			}
 		})()
+	}
+
+	loginProc := tenantOS.LoginProc()
+	shellOS, err := loginProc.StartProcess(procName, procArgs, &vos.ProcAttr{
+		Env:   append(loginProc.Environ(), s.Environ()...),
+		Files: vio,
+	})
+	if err != nil {
+		return err
 	}
 
 	// Start shell

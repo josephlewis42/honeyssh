@@ -18,14 +18,8 @@ type TenantOS struct {
 	pty PTY
 	// loginTime is the time the user logged in
 	loginTime time.Time
-	// Username the user logged in as.
-	user string
-	// Remote address of the connected user.
-	remoteAddr net.Addr
 
-	sshStdout io.Writer
-
-	sshExit func(int) error
+	session SSHSession
 }
 
 type EventRecorder interface {
@@ -48,10 +42,7 @@ func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session SSHSes
 		fs:            ufs,
 		eventRecorder: eventRecorder,
 		loginTime:     sharedOS.timeSource(),
-		user:          session.User(),
-		remoteAddr:    session.RemoteAddr(),
-		sshExit:       session.Exit,
-		sshStdout:     session,
+		session:       session,
 	}
 }
 
@@ -83,8 +74,8 @@ func (t *TenantOS) GetPTY() PTY {
 }
 
 func (t *TenantOS) LoginProc() *TenantProcOS {
-	env := NewMapEnvFromEnvList(t.sharedOS.LoginEnv(t.user))
-	usr, _ := t.sharedOS.GetUser(t.user)
+	env := NewMapEnvFromEnvList(t.loginEnv())
+	usr, _ := t.sharedOS.GetUser(t.SSHUser())
 	return &TenantProcOS{
 		TenantOS:       t,
 		VFS:            t.fs,
@@ -101,9 +92,6 @@ func (t *TenantOS) LoginProc() *TenantProcOS {
 	}
 }
 
-// TODO: add a LoginProc() to set the variables for the login process
-// it should set uid, gid, $SHELL, $PATH, $LOGNAME
-
 func (t *TenantOS) BootTime() time.Time {
 	return t.sharedOS.bootTime
 }
@@ -114,26 +102,23 @@ func (t *TenantOS) LoginTime() time.Time {
 
 // SSHUser returns the username used when establishing the SSH connection.
 func (t *TenantOS) SSHUser() string {
-	return t.user
+	return t.session.User()
 }
 
 // SSHRemoteAddr returns the net.Addr of the client side of the connection.
 func (t *TenantOS) SSHRemoteAddr() net.Addr {
-	if t.remoteAddr == nil {
-		return &net.IPNet{IP: net.IPv4(127, 0, 0, 1), Mask: net.IPv4Mask(255, 255, 255, 255)}
-	}
-	return t.remoteAddr
+	return t.session.RemoteAddr()
 }
 
 // SSHStdout is a direct connection to the SSH stdout stream.
 // Useful for broadcasting messages.
 func (t *TenantOS) SSHStdout() io.Writer {
-	return t.sshStdout
+	return t.session
 }
 
 // SSHExit hangs up the incoming SSH connection.
 func (t *TenantOS) SSHExit(code int) error {
-	return t.sshExit(code)
+	return t.session.Exit(code)
 }
 
 // LogCreds records credentials that the attacker used.
@@ -145,4 +130,33 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 
 func (t *TenantOS) Now() time.Time {
 	return t.sharedOS.timeSource()
+}
+
+func (t *TenantOS) loginEnv() []string {
+	mapEnv := NewMapEnv()
+
+	mapEnv.Setenv("SHELL", t.sharedOS.config.OS.DefaultShell)
+	mapEnv.Setenv("PATH", t.sharedOS.config.OS.DefaultPath)
+	mapEnv.Setenv("PWD", "/")
+	mapEnv.Setenv("HOME", "/")
+
+	username := t.session.User()
+	mapEnv.Setenv("USER", username)
+	mapEnv.Setenv("LOGNAME", username)
+
+	if usr, ok := t.sharedOS.GetUser(username); ok {
+		if usr.Shell != "" {
+			mapEnv.Setenv("SHELL", usr.Shell)
+		}
+		if usr.Home != "" {
+			mapEnv.Setenv("PWD", usr.Home)
+			mapEnv.Setenv("HOME", usr.Home)
+		}
+	}
+
+	if term := t.GetPTY().Term; term != "" {
+		mapEnv.Setenv("TERM", term)
+	}
+
+	return mapEnv.Environ()
 }
