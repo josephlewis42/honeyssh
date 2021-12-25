@@ -16,6 +16,7 @@ import (
 	fcolor "github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
 	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/osshit/third_party/memmapfs/mem"
 )
 
 // Ls implements the UNIX ls command.
@@ -292,6 +293,11 @@ func getUIDGID(fileInfo os.FileInfo) (uid, gid int) {
 	case *tar.Header:
 		return v.Uid, v.Gid
 
+	case mem.FileInfo:
+		return 1000, 1000
+
+	case *mem.FileInfo:
+		return 2000, 2000
 	default:
 		// TODO: Log the type that caused the failure.
 		return 0, 0

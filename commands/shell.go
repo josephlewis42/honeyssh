@@ -161,9 +161,8 @@ func (s *Shell) runInteractive() int {
 			return 1 // Input closed, quit.
 
 		case err == readline.ErrInterrupt:
-			// TODO: handle interrupt, line is valid here.
-			log.Printf("interrupt")
-
+			// Interrupt clears line.
+			continue
 		case err != nil:
 			log.Printf("Error readline: %v", err)
 			continue

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -139,10 +138,10 @@ func Wget(virtOS vos.VOS) int {
 
 		var contentLength int
 		if lengthStr := response.Header.Get("Content-Length"); lengthStr != "" {
-			// Ignore error parsing length.
 			contentLength, err = strconv.Atoi(lengthStr)
 			if err != nil {
-				log.Println("couldn't parse length str: ", lengthStr, "err:", err)
+				// Ignore error parsing length, we'll still try to download.
+				contentLength = 0
 			}
 		}
 		contentType := "application/binary"
