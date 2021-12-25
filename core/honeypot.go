@@ -1,8 +1,6 @@
 package core
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
 	"crypto/subtle"
 	"fmt"
@@ -18,7 +16,6 @@ import (
 	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/core/logger"
 	"josephlewis.net/osshit/core/vos"
-	"josephlewis.net/osshit/third_party/tarfs"
 )
 
 type sshContextKey struct {
@@ -56,16 +53,7 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 	}()
 
 	// Set up the filesystem.
-	fd, err := configuration.OpenFilesystemTarGz()
-	if err != nil {
-		return nil, err
-	}
-	toClose = append(toClose, fd)
-	gr, err := gzip.NewReader(fd)
-	if err != nil {
-		return nil, err
-	}
-	vfs, err := tarfs.New(tar.NewReader(gr))
+	vfs, err := vos.NewVFSFromConfig(configuration)
 	if err != nil {
 		return nil, err
 	}

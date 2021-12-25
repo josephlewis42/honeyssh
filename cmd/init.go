@@ -17,7 +17,8 @@ var initCmd = &cobra.Command{
 
 		logger := log.New(cmd.ErrOrStderr(), "", 0)
 
-		return config.Initialize(".", logger)
+		_, err := config.Initialize(".", logger)
+		return err
 	},
 }
 

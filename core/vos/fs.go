@@ -1,16 +1,33 @@
 package vos
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"errors"
 	"io/fs"
 	"os"
 	"path"
 
 	"github.com/spf13/afero"
+	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/third_party/cowfs"
 	"josephlewis.net/osshit/third_party/memmapfs"
 	"josephlewis.net/osshit/third_party/realpath"
+	"josephlewis.net/osshit/third_party/tarfs"
 )
+
+func NewVFSFromConfig(configuration *config.Configuration) (VFS, error) {
+	fd, err := configuration.OpenFilesystemTarGz()
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+	gr, err := gzip.NewReader(fd)
+	if err != nil {
+		return nil, err
+	}
+	return tarfs.New(tar.NewReader(gr))
+}
 
 func NewMemCopyOnWriteFs(base VFS, timeSource TimeSource) VFS {
 	lfsMemfs := NewLinkingFs(memmapfs.NewMemMapFs(timeSource))

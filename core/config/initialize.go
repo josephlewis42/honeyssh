@@ -17,18 +17,18 @@ import (
 )
 
 // Initialize creates the honeypot configuartion in the given directory.
-func Initialize(path string, logger *log.Logger) error {
+func Initialize(path string, logger *log.Logger) (*Configuration, error) {
 	// Make sure path exists
 	full, err := filepath.Abs(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	stat, err := os.Stat(full)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !stat.Mode().IsDir() {
-		return errors.New("intialization path must be a directory")
+		return nil, errors.New("intialization path must be a directory")
 	}
 
 	logger.Println("Creating configuration in:", full)
@@ -40,7 +40,7 @@ func Initialize(path string, logger *log.Logger) error {
 	logger.Println("Generating private key...")
 	privateKey, err := generateRSAKey(logger)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logger.Println("Creating configuration files...")
@@ -62,7 +62,7 @@ func Initialize(path string, logger *log.Logger) error {
 		if !exists(configFile.path) {
 			logger.Println("  ", configFile.path)
 			if err := afero.WriteFile(cfg.fs(), configFile.path, configFile.contents, 0600); err != nil {
-				return fmt.Errorf("couldn't write configuration file to %q: %v", configFile.path, err)
+				return nil, fmt.Errorf("couldn't write configuration file to %q: %v", configFile.path, err)
 			}
 		} else {
 			logger.Println("  ", configFile.path, "(skipped, it already exists)")
@@ -75,14 +75,13 @@ func Initialize(path string, logger *log.Logger) error {
 		DownloadDirName,
 		LogsDirName,
 	} {
-		log.Println("  ", dir)
+		logger.Println("  ", dir)
 		if err := cfg.fs().MkdirAll(dir, 0700); err != nil {
-			return fmt.Errorf("couldn't make directory %q: %v", dir, err)
+			return nil, fmt.Errorf("couldn't make directory %q: %v", dir, err)
 		}
 	}
 
-	// Create root FS tar.
-	return nil
+	return cfg, nil
 }
 
 func generateRSAKey(logger *log.Logger) ([]byte, error) {

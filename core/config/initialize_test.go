@@ -10,7 +10,7 @@ import (
 
 func TestInitialize(t *testing.T) {
 	tempDir := t.TempDir()
-	if err := Initialize(tempDir, log.New(ioutil.Discard, "", 0)); err != nil {
+	if _, err := Initialize(tempDir, log.New(ioutil.Discard, "", 0)); err != nil {
 		t.Fatal(err)
 	}
 

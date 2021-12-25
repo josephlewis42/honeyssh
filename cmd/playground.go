@@ -3,11 +3,13 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"josephlewis.net/osshit/commands"
 	"josephlewis.net/osshit/core/config"
@@ -69,10 +71,27 @@ var playgroundCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		fs := vos.NewMemCopyOnWriteFs(afero.NewReadOnlyFs(afero.NewOsFs()), time.Now)
+		dir, err := ioutil.TempDir("", "playground")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(dir)
 
-		sharedOS := vos.NewSharedOS(fs, commands.BuiltinProcessResolver, &config.Configuration{}, time.Now)
+		playgroundLogger := log.New(cmd.ErrOrStderr(), "[playground] ", 0)
+		cfg, err := config.Initialize(dir, playgroundLogger)
+		if err != nil {
+			return err
+		}
 
+		fs, err := vos.NewVFSFromConfig(cfg)
+		if err != nil {
+			return err
+		}
+
+		playgroundLogger.Printf("Logging to: file://%s\n", dir)
+		playgroundLogger.Println(strings.Repeat("=", 80))
+
+		sharedOS := vos.NewSharedOS(fs, commands.BuiltinProcessResolver, cfg, time.Now)
 		tenantOS := vos.NewTenantOS(sharedOS, &vostest.NopEventRecorder{}, &playgroundSession{
 			out:  cmd.OutOrStdout(),
 			user: "root",
@@ -89,7 +108,7 @@ var playgroundCmd = &cobra.Command{
 
 		runner, err := initProc.StartProcess("/bin/sh", []string{}, &vos.ProcAttr{
 			Dir:   "/",
-			Env:   []string{},
+			Env:   initProc.Environ(),
 			Files: &osVIO{},
 		})
 		if err != nil {

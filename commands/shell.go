@@ -164,56 +164,64 @@ func (s *Shell) Run() int {
 			continue // empty line
 
 		default:
-			tokens, err := shlex.Split(line, true)
-			if err != nil {
-				fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
-				continue
-			}
-			if len(tokens) == 0 {
-				continue
-			}
-
-			// Take off command environment variables
-			effectiveEnv := s.VirtualOS.Environ()
-			var cmdEnvStop int
-			for ; cmdEnvStop < len(tokens); cmdEnvStop++ {
-				tok := tokens[cmdEnvStop]
-				if strings.Contains(tok, "=") {
-					effectiveEnv = append(effectiveEnv, tok)
-				} else {
-					break
-				}
-			}
-
-			tokens = tokens[cmdEnvStop:]
-
-			// If the full command was environment variables, set them. Otherwise they
-			// should only be populated for the upcoming command.
-			if 0 == len(tokens) {
-				vos.CopyEnv(s.VirtualOS, effectiveEnv)
-				continue
-			}
-
-			// Expand the environment
-			for i, tok := range tokens {
-				mapEnv := vos.NewMapEnvFromEnvList(effectiveEnv)
-
-				// Shell only arguments
-				mapEnv.Setenv("$", fmt.Sprintf("%d", s.VirtualOS.Getpid()))
-				mapEnv.Setenv("?", fmt.Sprintf("%d", uint8(s.lastRet)))
-				mapEnv.Setenv("WIDTH", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width))
-				mapEnv.Setenv("HEIGHT", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height))
-
-				tokens[i] = os.Expand(tok, mapEnv.Getenv)
-			}
-
-			s.ExecuteProgramOrBuiltin(effectiveEnv, tokens)
+			s.runCommand(line)
 		}
 	}
 	return 0
 }
 
+func (s *Shell) runCommand(command string) {
+	tokens, err := shlex.Split(command, true)
+	if err != nil {
+		fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
+		return
+	}
+	if len(tokens) == 0 {
+		return
+	}
+
+	// Take off command environment variables
+	effectiveEnv := s.VirtualOS.Environ()
+	var cmdEnvStop int
+	for ; cmdEnvStop < len(tokens); cmdEnvStop++ {
+		tok := tokens[cmdEnvStop]
+		if strings.Contains(tok, "=") {
+			effectiveEnv = append(effectiveEnv, tok)
+		} else {
+			break
+		}
+	}
+
+	tokens = tokens[cmdEnvStop:]
+
+	// If the full command was environment variables, set them. Otherwise they
+	// should only be populated for the upcoming command.
+	if 0 == len(tokens) {
+		vos.CopyEnv(s.VirtualOS, effectiveEnv)
+		return
+	}
+
+	// Expand the environment
+	for i, tok := range tokens {
+		mapEnv := vos.NewMapEnvFromEnvList(effectiveEnv)
+
+		// Shell only arguments
+		mapEnv.Setenv("$", fmt.Sprintf("%d", s.VirtualOS.Getpid()))
+		mapEnv.Setenv("?", fmt.Sprintf("%d", uint8(s.lastRet)))
+		mapEnv.Setenv("WIDTH", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width))
+		mapEnv.Setenv("HEIGHT", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height))
+
+		tokens[i] = os.Expand(tok, mapEnv.Getenv)
+	}
+
+	s.ExecuteProgramOrBuiltin(effectiveEnv, tokens)
+}
+
 func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
+	if len(args) == 0 {
+		return
+	}
+
 	// Execute builtins
 	if builtin, ok := AllBuiltins[args[0]]; ok {
 		s.lastRet = builtin.Main(s, args)
@@ -224,6 +232,10 @@ func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
 }
 
 func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
+	if len(args) == 0 {
+		return
+	}
+
 	proc, err := s.VirtualOS.StartProcess(args[0], args, &vos.ProcAttr{
 		Env:   cmdEnv,
 		Files: s.VirtualOS,
