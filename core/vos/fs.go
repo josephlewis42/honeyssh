@@ -4,16 +4,19 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"errors"
+	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
+	"strings"
+	"time"
 
 	"github.com/spf13/afero"
 	"josephlewis.net/osshit/core/config"
 	"josephlewis.net/osshit/third_party/cowfs"
 	"josephlewis.net/osshit/third_party/memmapfs"
 	"josephlewis.net/osshit/third_party/realpath"
-	"josephlewis.net/osshit/third_party/tarfs"
 )
 
 func NewVFSFromConfig(configuration *config.Configuration) (VFS, error) {
@@ -26,7 +29,82 @@ func NewVFSFromConfig(configuration *config.Configuration) (VFS, error) {
 	if err != nil {
 		return nil, err
 	}
-	return tarfs.New(tar.NewReader(gr))
+
+	lfsMemfs := NewLinkingFs(memmapfs.NewMemMapFs(time.Now))
+	if err := ExtractTarToVFS(lfsMemfs, tar.NewReader(gr)); err != nil {
+		return nil, err
+	}
+
+	return lfsMemfs, nil
+}
+
+func ExtractTarToVFS(vfs VFS, t *tar.Reader) error {
+	for {
+		hdr, err := t.Next()
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return err
+		}
+
+		if err := (func() error {
+			hdr.Name = "/" + strings.TrimPrefix(strings.TrimSuffix(hdr.Name, "/"), "/")
+
+			// Make parents
+			vfs.MkdirAll(path.Dir(hdr.Name), 0777)
+
+			mode := hdr.FileInfo().Mode()
+			switch {
+			case mode&fs.ModeDir > 0:
+				err := vfs.Mkdir(hdr.Name, mode)
+				switch {
+				case os.IsExist(err):
+					// Do nothing
+				case err != nil:
+					return err
+				}
+			case mode&fs.ModeSymlink > 0:
+				if linker, ok := vfs.(afero.Linker); ok {
+					if err := linker.SymlinkIfPossible(hdr.Linkname, hdr.Name); err != nil {
+						switch {
+						case os.IsExist(err):
+							// Do nothing
+						case err != nil:
+							return err
+						}
+					}
+				} else {
+					return afero.ErrNoSymlink
+				}
+			default:
+				fd, err := vfs.OpenFile(hdr.Name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode)
+				if err != nil {
+					return err
+				}
+				// Don't defer the close because it'll update the modification time.
+				if _, err := io.CopyN(fd, t, hdr.Size); err != nil {
+					fd.Close()
+					return err
+				}
+				fd.Close()
+			}
+
+			if err := vfs.Chown(hdr.Name, hdr.Uid, hdr.Gid); err != nil {
+				return err
+			}
+			if err := vfs.Chmod(hdr.Name, mode); err != nil {
+				return err
+			}
+			if err := vfs.Chtimes(hdr.Name, hdr.FileInfo().ModTime(), hdr.FileInfo().ModTime()); err != nil {
+				return err
+			}
+
+			return nil
+		}()); err != nil {
+			return fmt.Errorf("extracting %q: %v", hdr.Name, err)
+		}
+	}
 }
 
 func NewMemCopyOnWriteFs(base VFS, timeSource TimeSource) VFS {
