@@ -195,9 +195,8 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 
 	procName := h.configuration.OS.DefaultShell
 	procArgs := []string{procName}
-	if remoteCommand := s.Command(); len(remoteCommand) > 0 {
-		procName = remoteCommand[0]
-		procArgs = remoteCommand
+	if remoteCommand := s.RawCommand(); remoteCommand != "" {
+		procArgs = append(procArgs, "-c", remoteCommand)
 	}
 
 	tenantOS := vos.NewTenantOS(h.sharedOS, sessionLogger, s)
