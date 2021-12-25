@@ -53,8 +53,16 @@ func RunShell(virtualOS vos.VOS) int {
 		Short:     "Standard command interpreter for the system. Currently being changed to conform with the POSIX 1003.2 standard.",
 		NeverBail: true,
 	}
+	commandFlag := cmd.Flags().String('c', "", "Command")
 
-	return cmd.Run(virtualOS, s.Run)
+	return cmd.Run(virtualOS, func() int {
+		if *commandFlag != "" {
+			s.runCommand(*commandFlag)
+			return s.lastRet
+		}
+
+		return s.runInteractive()
+	})
 }
 
 func NewShell(virtualOS vos.VOS) (*Shell, error) {
@@ -139,7 +147,7 @@ func (s *Shell) Prompt() string {
 	return unescape(prompt)
 }
 
-func (s *Shell) Run() int {
+func (s *Shell) runInteractive() int {
 	for !s.Quit {
 		s.Readline.SetPrompt(s.Prompt())
 		line, err := s.Readline.Readline()
