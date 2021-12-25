@@ -237,13 +237,13 @@ func Dircolor(fileInfo os.FileInfo) *fcolor.Color {
 }
 
 func columnize(paths []fs.FileInfo, screenWidth int) []int {
-	if len(paths) == 0 {
+	numFiles := len(paths)
+	if numFiles == 0 {
 		return []int{0}
 	}
 
 	const colPadding = 2
 
-	numFiles := len(paths)
 	// Size of the display of the file name, actual length may vary if there are
 	// escape sequences to format it.
 	displayLengths := make([]int, len(paths))
@@ -258,7 +258,7 @@ func columnize(paths []fs.FileInfo, screenWidth int) []int {
 		columns = len(paths)
 	}
 	var maximums []int // Holds maximum size of a name in the column.
-	for ; columns > 1; columns-- {
+	for ; columns >= 1; columns-- {
 		maximums = make([]int, columns)
 		total := (columns - 1) * colPadding
 		rows := (numFiles / columns) + 1
