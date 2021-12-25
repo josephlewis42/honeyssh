@@ -62,6 +62,14 @@ func (s *SharedOS) Uname() Utsname {
 	}
 }
 
+func (s *SharedOS) BootTime() time.Time {
+	return s.bootTime
+}
+
+func (s *SharedOS) Now() time.Time {
+	return s.timeSource()
+}
+
 // ReadOnlyFs returns a read only version of the base filesystem that multiple
 // tenants can read from.
 func (s *SharedOS) ReadOnlyFs() VFS {

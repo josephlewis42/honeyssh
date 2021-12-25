@@ -13,3 +13,7 @@ test:
 .PHONY: run
 run: build
 	./osshit serve  --config honeycfg
+
+.PHONY: play
+play: build
+	./osshit playground

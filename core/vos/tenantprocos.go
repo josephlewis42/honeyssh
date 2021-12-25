@@ -143,7 +143,7 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 		VEnv:           env,
 		ExecutablePath: name,
 		ProcArgs:       argv,
-		PID:            ea.TenantOS.sharedOS.NextPID(),
+		PID:            ea.TenantOS.NextPID(),
 		UID:            ea.UID,
 		Dir:            ea.Dir,
 	}
@@ -227,7 +227,7 @@ func (ea *TenantProcOS) LogInvalidInvocation(err error) {
 
 func (ea *TenantProcOS) findHoneypotCommand(execPath string) (ProcessFunc, string, error) {
 	// Try to short-circuit the location logic.
-	cmd := ea.TenantOS.sharedOS.processResolver(execPath)
+	cmd := ea.TenantOS.processResolver(execPath)
 	if cmd != nil {
 		return cmd, execPath, nil
 	}
@@ -248,7 +248,7 @@ func (ea *TenantProcOS) findHoneypotCommand(execPath string) (ProcessFunc, strin
 		fallthrough
 
 	default:
-		cmd := ea.TenantOS.sharedOS.processResolver(execPath)
+		cmd := ea.TenantOS.processResolver(execPath)
 		if cmd == nil {
 			return nil, "", ErrNotFound
 		}
@@ -263,7 +263,7 @@ type DownloadInfo struct {
 }
 
 func (t *TenantProcOS) DownloadPath(source string) (afero.File, error) {
-	base := t.sharedOS.timeSource().Format(time.RFC3339Nano)
+	base := t.Now().Format(time.RFC3339Nano)
 	// Write metadata with the download to prevent data loss.
 	{
 		di := &DownloadInfo{
@@ -276,7 +276,7 @@ func (t *TenantProcOS) DownloadPath(source string) (afero.File, error) {
 			return nil, err
 		}
 
-		dfd, err := t.sharedOS.config.CreateDownload(base + "_metadata.json")
+		dfd, err := t.SharedOS.config.CreateDownload(base + "_metadata.json")
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +284,7 @@ func (t *TenantProcOS) DownloadPath(source string) (afero.File, error) {
 		dfd.Write(metadata)
 	}
 
-	fd, err := t.sharedOS.config.CreateDownload(base + ".download")
+	fd, err := t.SharedOS.config.CreateDownload(base + ".download")
 	if err != nil {
 		return nil, err
 	}

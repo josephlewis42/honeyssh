@@ -9,7 +9,7 @@ import (
 )
 
 type TenantOS struct {
-	sharedOS *SharedOS
+	*SharedOS
 	// fs contains a tenant's view of the shared OS.
 	fs VFS
 	// eventRecorder logs events.
@@ -35,25 +35,20 @@ type SSHSession interface {
 }
 
 func NewTenantOS(sharedOS *SharedOS, eventRecorder EventRecorder, session SSHSession) *TenantOS {
-	ufs := NewMemCopyOnWriteFs(sharedOS.ReadOnlyFs(), sharedOS.timeSource)
+	mountFS := NewMountFS(sharedOS.ReadOnlyFs())
+	if err := mountFS.Mount("/proc", NewProcFS(sharedOS)); err != nil {
+		panic(err)
+	}
+
+	ufs := NewMemCopyOnWriteFs(mountFS, sharedOS.timeSource)
 
 	return &TenantOS{
-		sharedOS:      sharedOS,
+		SharedOS:      sharedOS,
 		fs:            ufs,
 		eventRecorder: eventRecorder,
 		loginTime:     sharedOS.timeSource(),
 		session:       session,
 	}
-}
-
-// Hostname implements VOS.Hostname.
-func (t *TenantOS) Hostname() string {
-	return t.sharedOS.Hostname()
-}
-
-// Uname implements VOS.Uname.
-func (t *TenantOS) Uname() Utsname {
-	return t.sharedOS.Uname()
 }
 
 func (t *TenantOS) SetPTY(pty PTY) {
@@ -75,7 +70,7 @@ func (t *TenantOS) GetPTY() PTY {
 
 func (t *TenantOS) LoginProc() *TenantProcOS {
 	env := NewMapEnvFromEnvList(t.loginEnv())
-	usr, _ := t.sharedOS.GetUser(t.SSHUser())
+	usr, _ := t.SharedOS.GetUser(t.SSHUser())
 	return &TenantProcOS{
 		TenantOS:       t,
 		VFS:            t.fs,
@@ -90,10 +85,6 @@ func (t *TenantOS) LoginProc() *TenantProcOS {
 			return 0
 		},
 	}
-}
-
-func (t *TenantOS) BootTime() time.Time {
-	return t.sharedOS.bootTime
 }
 
 func (t *TenantOS) LoginTime() time.Time {
@@ -128,15 +119,11 @@ func (t *TenantOS) LogCreds(creds *logger.Credentials) {
 	})
 }
 
-func (t *TenantOS) Now() time.Time {
-	return t.sharedOS.timeSource()
-}
-
 func (t *TenantOS) loginEnv() []string {
 	mapEnv := NewMapEnv()
 
-	mapEnv.Setenv("SHELL", t.sharedOS.config.OS.DefaultShell)
-	mapEnv.Setenv("PATH", t.sharedOS.config.OS.DefaultPath)
+	mapEnv.Setenv("SHELL", t.SharedOS.config.OS.DefaultShell)
+	mapEnv.Setenv("PATH", t.SharedOS.config.OS.DefaultPath)
 	mapEnv.Setenv("PWD", "/")
 	mapEnv.Setenv("HOME", "/")
 
@@ -144,7 +131,7 @@ func (t *TenantOS) loginEnv() []string {
 	mapEnv.Setenv("USER", username)
 	mapEnv.Setenv("LOGNAME", username)
 
-	if usr, ok := t.sharedOS.GetUser(username); ok {
+	if usr, ok := t.SharedOS.GetUser(username); ok {
 		if usr.Shell != "" {
 			mapEnv.Setenv("SHELL", usr.Shell)
 		}
