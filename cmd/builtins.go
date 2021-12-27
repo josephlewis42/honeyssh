@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"josephlewis.net/honeyssh/commands"
@@ -16,7 +17,7 @@ var builtinsCmd = &cobra.Command{
 		var builtins []string
 
 		for _, cmd := range commands.ListBuiltinCommands() {
-			builtins = append(builtins, cmd.Names...)
+			builtins = append(builtins, strings.Join(cmd.Names, ", "))
 		}
 
 		for cmd, _ := range commands.AllBuiltins {
