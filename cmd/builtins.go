@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/commands"
+	"josephlewis.net/honeyssh/commands"
 )
 
 // serveCmd represents the serve command

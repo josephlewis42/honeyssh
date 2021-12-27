@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"josephlewis.net/osshit/third_party/memmapfs"
+	"josephlewis.net/honeyssh/third_party/memmapfs"
 )
 
 func FSTestCase(t *testing.T, suite FSTestSuite, testPath string) *FSTestCaseSetup {

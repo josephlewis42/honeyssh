@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Touch implements a POSIX touch command.

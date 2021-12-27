@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Kill implements a no-op kill command.

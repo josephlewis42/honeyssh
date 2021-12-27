@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/abiosoft/readline"
-	"josephlewis.net/osshit/core/logger"
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/logger"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Passwd implements a fake passwd command.

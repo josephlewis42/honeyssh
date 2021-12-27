@@ -4,7 +4,7 @@ all: build test
 .PHONY: build
 build:
 	go generate ./...
-	go build -o osshit ./main.go
+	go build -o honeyssh ./main.go
 
 .PHONY: test
 test:
@@ -12,8 +12,8 @@ test:
 
 .PHONY: run
 run: build
-	./osshit serve  --config honeycfg
+	./honeyssh serve  --config honeycfg
 
 .PHONY: play
 play: build
-	./osshit playground
+	./honeyssh playground

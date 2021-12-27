@@ -12,10 +12,10 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
-	"josephlewis.net/osshit/commands"
-	"josephlewis.net/osshit/core/config"
-	"josephlewis.net/osshit/core/logger"
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/commands"
+	"josephlewis.net/honeyssh/core/config"
+	"josephlewis.net/honeyssh/core/logger"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 type sshContextKey struct {

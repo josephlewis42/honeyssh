@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	goscp "github.com/bramvdbogaerde/go-scp"
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 //

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"josephlewis.net/osshit/core/config"
+	"josephlewis.net/honeyssh/core/config"
 )
 
 // ProcessFunc is a "process" that can be run.

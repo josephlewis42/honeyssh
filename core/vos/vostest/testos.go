@@ -6,10 +6,10 @@ import (
 	"net"
 	"time"
 
-	"josephlewis.net/osshit/core/config"
-	"josephlewis.net/osshit/core/logger"
-	"josephlewis.net/osshit/core/vos"
-	"josephlewis.net/osshit/third_party/memmapfs"
+	"josephlewis.net/honeyssh/core/config"
+	"josephlewis.net/honeyssh/core/logger"
+	"josephlewis.net/honeyssh/core/vos"
+	"josephlewis.net/honeyssh/third_party/memmapfs"
 )
 
 type NopEventRecorder struct{}

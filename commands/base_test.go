@@ -8,8 +8,8 @@ import (
 
 	"github.com/anmitsu/go-shlex"
 	"github.com/sebdah/goldie/v2"
-	"josephlewis.net/osshit/core/vos"
-	"josephlewis.net/osshit/core/vos/vostest"
+	"josephlewis.net/honeyssh/core/vos"
+	"josephlewis.net/honeyssh/core/vos/vostest"
 )
 
 func ExampleBytesToHuman() {

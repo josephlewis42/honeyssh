@@ -3,7 +3,7 @@ package commands
 import (
 	"io"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Cat implements the POSIX cat command.

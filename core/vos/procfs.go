@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"josephlewis.net/osshit/third_party/memmapfs/mem"
+	"josephlewis.net/honeyssh/third_party/memmapfs/mem"
 )
 
 type procFile struct {

@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Free implements a fake free command.

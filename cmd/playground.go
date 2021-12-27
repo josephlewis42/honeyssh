@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/commands"
-	"josephlewis.net/osshit/core/config"
-	"josephlewis.net/osshit/core/vos"
-	"josephlewis.net/osshit/core/vos/vostest"
+	"josephlewis.net/honeyssh/commands"
+	"josephlewis.net/honeyssh/core/config"
+	"josephlewis.net/honeyssh/core/vos"
+	"josephlewis.net/honeyssh/core/vos/vostest"
 )
 
 type playgroundSession struct {

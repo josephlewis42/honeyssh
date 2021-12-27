@@ -28,7 +28,7 @@ Prepare an image by running the following:
 
 	docker pull some-image:latest
 	docker save some-image:latest > some-image.tar
-	osshit img2fs some-image.tar root_fs.tar.gz
+	honeyssh img2fs some-image.tar root_fs.tar.gz
 `,
 	Args: cobra.RangeArgs(2, 3),
 	RunE: func(cmd *cobra.Command, args []string) error {

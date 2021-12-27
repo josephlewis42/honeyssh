@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/josephlewis42/osshit/core/logger";
+option go_package = "github.com/josephlewis42/honeyssh/core/logger";
 
 message LogEntry {
   // Timestamp of the log event in micros since the UNIX epoch.

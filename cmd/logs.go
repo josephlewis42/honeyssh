@@ -10,18 +10,57 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/core"
+	"josephlewis.net/honeyssh/core"
 )
 
 var (
 	crlf = regexp.MustCompile(`\r?\n`)
 )
 
-// log2Asciicast converts a log to the asciicast format
-var log2Asciicast = &cobra.Command{
-	Use:   "log2asciicast INPUT > OUTPUT.cast",
-	Short: "Convert a log to asciicast format.",
-	Long:  `Convert a recorded terminal log to asciicast format.`,
+var logsCmd = &cobra.Command{
+	Use:     "logs",
+	Aliases: []string{"log"},
+	Short:   "Explore the honeypot interaction logs.",
+}
+
+// playCommand represents the playLog command
+var playCommand = &cobra.Command{
+	Use:   "play",
+	Short: "Replay a recorded interactive session in the terminal.",
+	Long:  `Plays a recorded interactive session back to the current terminal.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		fd, err := os.Open(args[0])
+		if err != nil {
+			return err
+		}
+
+		return core.Replay(fd, cmd.OutOrStdout())
+	},
+}
+
+// catCommand represents the playLog command
+var catCommand = &cobra.Command{
+	Use:   "cat",
+	Short: "Print full output of recorded log to a terminal.",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		fd, err := os.Open(args[0])
+		if err != nil {
+			return err
+		}
+
+		return core.Replay(fd, cmd.OutOrStdout(), core.MaxSleep(0*time.Second))
+	},
+}
+
+// asciicastCmd converts a log to the asciicast format
+var asciicastCmd = &cobra.Command{
+	Use:   "asciicast INPUT > OUTPUT.cast",
+	Short: "Convert a log to asciicast (asciinema) format.",
+	Long:  `Convert a recorded terminal log to asciicast (asciinema) format.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
@@ -95,5 +134,8 @@ var log2Asciicast = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(log2Asciicast)
+	rootCmd.AddCommand(logsCmd)
+	logsCmd.AddCommand(playCommand)
+	logsCmd.AddCommand(asciicastCmd)
+	logsCmd.AddCommand(catCommand)
 }

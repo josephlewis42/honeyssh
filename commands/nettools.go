@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 var (

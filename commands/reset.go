@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Reset sends an ANSI reset command if connected to a PTY.

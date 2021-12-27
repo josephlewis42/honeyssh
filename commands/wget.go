@@ -16,7 +16,7 @@ import (
 
 	"github.com/abiosoft/readline"
 	"github.com/juju/ratelimit"
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // wgetSocketControl prevents basic SSRF attacks by only allowing certain kinds

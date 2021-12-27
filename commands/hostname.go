@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Hostname implements the Linux command by the same name.

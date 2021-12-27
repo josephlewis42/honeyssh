@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/core/config"
+	"josephlewis.net/honeyssh/core/config"
 )
 
 var cfgPath string
@@ -23,10 +23,8 @@ func loadConfig() (*config.Configuration, error) {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "osshit",
-	Short: "Open SSH Intrusion Tracker",
-	Long:  `A medium interaction SSH honeypot.`,
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:   "honeyssh",
+	Short: "A medium interaction SSH honeypot.",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

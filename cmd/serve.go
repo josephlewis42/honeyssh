@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/osshit/core"
+	"josephlewis.net/honeyssh/core"
 )
 
 // serveCmd represents the serve command

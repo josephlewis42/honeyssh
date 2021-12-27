@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "josephlewis.net/osshit/cmd"
+import "josephlewis.net/honeyssh/cmd"
 
 func main() {
 	cmd.Execute()

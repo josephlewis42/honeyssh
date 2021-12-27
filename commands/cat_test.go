@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"josephlewis.net/osshit/core/vos/vostest"
+	"josephlewis.net/honeyssh/core/vos/vostest"
 )
 
 func TestCat(t *testing.T) {

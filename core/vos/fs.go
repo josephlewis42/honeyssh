@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"josephlewis.net/osshit/core/config"
-	"josephlewis.net/osshit/third_party/cowfs"
-	"josephlewis.net/osshit/third_party/memmapfs"
-	"josephlewis.net/osshit/third_party/realpath"
+	"josephlewis.net/honeyssh/core/config"
+	"josephlewis.net/honeyssh/third_party/cowfs"
+	"josephlewis.net/honeyssh/third_party/memmapfs"
+	"josephlewis.net/honeyssh/third_party/realpath"
 )
 
 func NewVFSFromConfig(configuration *config.Configuration) (VFS, error) {

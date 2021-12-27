@@ -1,4 +1,4 @@
-module josephlewis.net/osshit
+module josephlewis.net/honeyssh
 
 go 1.17
 

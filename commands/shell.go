@@ -10,7 +10,7 @@ import (
 
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 const (

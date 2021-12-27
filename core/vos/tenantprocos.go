@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"josephlewis.net/osshit/core/logger"
+	"josephlewis.net/honeyssh/core/logger"
 )
 
 type TenantProcOS struct {

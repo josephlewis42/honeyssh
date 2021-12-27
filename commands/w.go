@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // W implements the UNIX w command.

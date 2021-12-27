@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"josephlewis.net/osshit/core/vos"
+	"josephlewis.net/honeyssh/core/vos"
 )
 
 // Tar implements a basic tar command.
