@@ -14,6 +14,7 @@
 package memmapfs
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -56,13 +57,7 @@ func (m *MemMapFs) getData() map[string]*mem.FileData {
 func (*MemMapFs) Name() string { return "MemMapFS" }
 
 func (m *MemMapFs) Create(name string) (File, error) {
-	name = normalizePath(name)
-	m.mu.Lock()
-	file := mem.CreateFile(name, m.timeSource)
-	m.getData()[name] = file
-	m.registerWithParent(file, 0)
-	m.mu.Unlock()
-	return mem.NewFileHandle(file), nil
+	return m.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 }
 
 func (m *MemMapFs) unRegisterWithParent(fileName string) error {
@@ -79,6 +74,19 @@ func (m *MemMapFs) unRegisterWithParent(fileName string) error {
 	mem.RemoveFromMemDir(parent, f)
 	parent.Unlock()
 	return nil
+}
+
+func (m *MemMapFs) checkParentIsDir(name string) error {
+	pdir := filepath.Dir(name)
+	pdir = filepath.Clean(pdir)
+	pfile, err := m.lockfreeOpen(pdir)
+	if err != nil {
+		return err
+	}
+	if info := mem.GetFileInfo(pfile); info.IsDir() {
+		return nil
+	}
+	return errors.New("not a directory")
 }
 
 func (m *MemMapFs) findParent(f *mem.FileData) *mem.FileData {
@@ -145,6 +153,10 @@ func (m *MemMapFs) Mkdir(name string, perm os.FileMode) error {
 		return &os.PathError{Op: "mkdir", Path: name, Err: ErrFileExists}
 	}
 
+	if err := m.checkParentIsDir(name); err != nil {
+		return &os.PathError{Op: "mkdir", Path: name, Err: err}
+	}
+
 	m.mu.Lock()
 	item := mem.CreateDir(name, m.timeSource)
 	mem.SetMode(item, os.ModeDir|perm)
@@ -155,13 +167,22 @@ func (m *MemMapFs) Mkdir(name string, perm os.FileMode) error {
 	return m.setFileMode(name, perm|os.ModeDir)
 }
 
-func (m *MemMapFs) MkdirAll(path string, perm os.FileMode) error {
-	err := m.Mkdir(path, perm)
-	if err != nil {
-		if err.(*os.PathError).Err == ErrFileExists {
-			return nil
+func (m *MemMapFs) MkdirAll(name string, perm os.FileMode) error {
+	name = normalizePath(name)
+	pathPieces := strings.Split(name, "/")
+
+	for i := 1; i <= len(pathPieces); i++ {
+		part := "/" + filepath.Join(pathPieces[:i]...)
+		if part == "" {
+			continue
 		}
-		return err
+		err := m.Mkdir(part, perm)
+		if err != nil {
+			if err.(*os.PathError).Err == ErrFileExists {
+				continue
+			}
+			return err
+		}
 	}
 	return nil
 }
@@ -176,16 +197,15 @@ func normalizePath(path string) string {
 	case "..":
 		return FilePathSeparator
 	default:
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
 		return path
 	}
 }
 
 func (m *MemMapFs) Open(name string) (File, error) {
-	f, err := m.open(name)
-	if f != nil {
-		return mem.NewReadOnlyFileHandle(f), err
-	}
-	return nil, err
+	return m.OpenFile(name, os.O_RDONLY, 0)
 }
 
 func (m *MemMapFs) openWrite(name string) (File, error) {
@@ -226,11 +246,32 @@ func (m *MemMapFs) OpenFile(name string, flag int, perm os.FileMode) (File, erro
 		return nil, &os.PathError{Op: "open", Path: name, Err: ErrFileExists}
 	}
 	if os.IsNotExist(err) && (flag&os.O_CREATE > 0) {
-		file, err = m.Create(name)
+		name = normalizePath(name)
+		if err := m.checkParentIsDir(name); err != nil {
+			return nil, &os.PathError{Op: "open", Path: name, Err: err}
+		}
+
+		m.mu.Lock()
+		fileData := mem.CreateFile(name, m.timeSource)
+		m.getData()[name] = fileData
+		m.registerWithParent(fileData, 0)
+		m.mu.Unlock()
+		file = mem.NewFileHandle(fileData)
+		err = nil
 		chmod = true
 	}
 	if err != nil {
 		return nil, err
+	}
+	// Can't open a directory in write mode.
+	stat, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	if stat.IsDir() && (flag&os.O_RDWR > 0 || flag&os.O_WRONLY > 0) {
+		file.Close()
+		return nil, &os.PathError{Op: "open", Path: name, Err: errors.New("is a directory")}
 	}
 	if flag == os.O_RDONLY {
 		file = mem.NewReadOnlyFileHandle(file.(*mem.File).Data())
@@ -336,6 +377,7 @@ func (m *MemMapFs) Stat(name string) (os.FileInfo, error) {
 }
 
 func (m *MemMapFs) Chmod(name string, mode os.FileMode) error {
+	name = normalizePath(name)
 	mode &= chmodBits
 
 	m.mu.RLock()

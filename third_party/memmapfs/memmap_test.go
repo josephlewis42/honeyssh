@@ -70,9 +70,7 @@ func TestPathErrors(t *testing.T) {
 	// fs.Create doesn't return an error
 
 	err = fs.Mkdir(path2, perm)
-	if err != nil {
-		t.Error(err)
-	}
+	checkPathError(t, err, "Mkdir")
 	err = fs.Mkdir(path2, perm)
 	checkPathError(t, err, "Mkdir")
 
@@ -187,7 +185,7 @@ func TestPermSet(t *testing.T) {
 	// Test MkdirAll
 	err = fs.MkdirAll(dirPathAll, dirMode)
 	if err != nil {
-		t.Errorf("MkDir Create failed: %s", err)
+		t.Errorf("MkdirAll Create failed: %s", err)
 		return
 	}
 	s, err = fs.Stat(dirPathAll)
@@ -210,6 +208,10 @@ func TestMultipleOpenFiles(t *testing.T) {
 
 	for i, fs := range Fss {
 		dir := testDir(fs)
+		if err := fs.MkdirAll(dir, 0700); err != nil {
+			t.Error("fs.Create failed: " + err.Error())
+		}
+
 		path := filepath.Join(dir, fileName)
 		fh1, err := fs.Create(path)
 		if err != nil {
@@ -275,6 +277,9 @@ func TestReadOnly(t *testing.T) {
 
 	for _, fs := range Fss {
 		dir := testDir(fs)
+		if err := fs.MkdirAll(dir, 0700); err != nil {
+			t.Error("fs.Create failed: " + err.Error())
+		}
 		path := filepath.Join(dir, fileName)
 
 		f, err := fs.Create(path)
@@ -315,6 +320,9 @@ func TestWriteCloseTime(t *testing.T) {
 
 	for _, fs := range Fss {
 		dir := testDir(fs)
+		if err := fs.MkdirAll(dir, 0700); err != nil {
+			t.Error("fs.Create failed: " + err.Error())
+		}
 		path := filepath.Join(dir, fileName)
 
 		f, err := fs.Create(path)
@@ -701,6 +709,7 @@ func removeAllTestFiles(t *testing.T) {
 }
 
 func testDir(fs Fs) string {
+	fs.Mkdir("/tmp", 0777)
 	name, err := afero.TempDir(fs, "", "afero")
 	if err != nil {
 		panic(fmt.Sprint("unable to work with test dir", err))
