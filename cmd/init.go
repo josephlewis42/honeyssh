@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/honeyssh/core/config"
+	"github.com/josephlewis42/honeyssh/core/config"
 )
 
 // initCmd intializes the honeypot configuration

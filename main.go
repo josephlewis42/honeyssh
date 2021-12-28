@@ -1,6 +1,6 @@
 package main
 
-import "josephlewis.net/honeyssh/cmd"
+import "github.com/josephlewis42/honeyssh/cmd"
 
 func main() {
 	cmd.Execute()

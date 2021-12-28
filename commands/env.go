@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Env implements the POSIX env command.

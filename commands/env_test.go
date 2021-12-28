@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"josephlewis.net/honeyssh/core/vos/vostest"
+	"github.com/josephlewis42/honeyssh/core/vos/vostest"
 )
 
 func TestEnv(t *testing.T) {

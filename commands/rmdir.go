@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Rmdir implements a POSIX rmdir command.

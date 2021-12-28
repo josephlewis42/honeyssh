@@ -6,10 +6,10 @@ import (
 	"net"
 	"time"
 
-	"josephlewis.net/honeyssh/core/config"
-	"josephlewis.net/honeyssh/core/logger"
-	"josephlewis.net/honeyssh/core/vos"
-	"josephlewis.net/honeyssh/third_party/memmapfs"
+	"github.com/josephlewis42/honeyssh/core/config"
+	"github.com/josephlewis42/honeyssh/core/logger"
+	"github.com/josephlewis42/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/third_party/memmapfs"
 )
 
 type NopEventRecorder struct{}

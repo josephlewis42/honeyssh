@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"strconv"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 const (

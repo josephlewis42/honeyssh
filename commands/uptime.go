@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Uptime implements the UNIX uptime command.

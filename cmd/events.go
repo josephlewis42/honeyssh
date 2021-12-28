@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/honeyssh/core/logger"
+	"github.com/josephlewis42/honeyssh/core/logger"
 	"sigs.k8s.io/yaml"
 )
 

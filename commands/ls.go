@@ -15,8 +15,8 @@ import (
 
 	fcolor "github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
-	"josephlewis.net/honeyssh/core/vos"
-	"josephlewis.net/honeyssh/third_party/memmapfs/mem"
+	"github.com/josephlewis42/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/third_party/memmapfs/mem"
 )
 
 // Ls implements the UNIX ls command.

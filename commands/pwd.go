@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Pwd implements the UNIX pwd command.

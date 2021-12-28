@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Screen implements a fake screen command.

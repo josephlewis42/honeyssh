@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Apt implements a fake apt command.

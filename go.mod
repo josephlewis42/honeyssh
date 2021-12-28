@@ -1,4 +1,4 @@
-module josephlewis.net/honeyssh
+module github.com/josephlewis42/honeyssh
 
 go 1.17
 

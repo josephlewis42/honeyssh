@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"josephlewis.net/honeyssh/third_party/memmapfs/mem"
+	"github.com/josephlewis42/honeyssh/third_party/memmapfs/mem"
 )
 
 const chmodBits = os.ModePerm | os.ModeSetuid | os.ModeSetgid | os.ModeSticky // Only a subset of bits are allowed to be changed. Documented under os.Chmod()

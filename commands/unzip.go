@@ -7,7 +7,7 @@ import (
 	"io/fs"
 	"path"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Unzip implements a basic unzip command.

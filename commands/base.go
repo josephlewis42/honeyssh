@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/color"
 	fcolor "github.com/fatih/color"
 	getopt "github.com/pborman/getopt/v2"
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Always generate golden files on generate, a diff indicates a problem and

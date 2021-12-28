@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"josephlewis.net/honeyssh/core"
+	"github.com/josephlewis42/honeyssh/core"
 )
 
 var (

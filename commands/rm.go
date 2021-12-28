@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Rm implements a POSIX rm command.

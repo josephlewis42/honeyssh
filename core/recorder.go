@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 type MockFd int

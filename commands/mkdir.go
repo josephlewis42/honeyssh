@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"josephlewis.net/honeyssh/core/vos"
+	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
 // Mkdir implements a POSIX mkdir command.

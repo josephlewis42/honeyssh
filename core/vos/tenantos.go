@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"josephlewis.net/honeyssh/core/logger"
+	"github.com/josephlewis42/honeyssh/core/logger"
 )
 
 type TenantOS struct {

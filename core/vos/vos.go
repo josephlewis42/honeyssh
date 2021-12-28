@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"josephlewis.net/honeyssh/core/logger"
+	"github.com/josephlewis42/honeyssh/core/logger"
 )
 
 // Utsname mimics POSIX sys/utsname.h
