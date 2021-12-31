@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -25,6 +26,79 @@ func ReadJSONLinesLog(r io.Reader, handler func(le *LogEntry)) error {
 		handler(&logEntry)
 	}
 	return nil
+}
+
+type InteractionReport struct {
+	// Map of sessionID -> interactions
+	interactions map[string]*InteractiveSession
+}
+
+type InteractiveSession struct {
+	Login struct {
+		Username   string `json:"username"`
+		Password   string `json:"password"`
+		PublicKey  []byte `json:"public_key,omitempty"`
+		RemoteAddr string `json:"remote_addr,omitempty"`
+	} `json:"login"`
+	TTYLog       string `json:"tty_log"`
+	LogEntries   int    `json:"log_entries"`
+	TerminalName string `json:"terminal_name"`
+	IsPty        bool   `json:"is_pty"`
+
+	Commands  []string `json:"commands"`
+	Downloads []string `json:"downloads"`
+}
+
+func (i *InteractiveSession) Update(le *LogEntry) {
+	i.LogEntries++
+
+	switch event := le.GetLogType().(type) {
+	case *LogEntry_LoginAttempt:
+		i.Login.Password = event.LoginAttempt.GetPassword()
+		i.Login.Username = event.LoginAttempt.GetUsername()
+		i.Login.PublicKey = event.LoginAttempt.GetPublicKey()
+		i.Login.RemoteAddr = event.LoginAttempt.GetRemoteAddr()
+	case *LogEntry_RunCommand:
+		i.Commands = append(i.Commands, strings.Join(event.RunCommand.GetCommand(), " "))
+	case *LogEntry_Download:
+		i.Downloads = append(i.Downloads, fmt.Sprintf("%q -> %q", event.Download.GetSource(), event.Download.GetName()))
+	case *LogEntry_UnknownCommand:
+		i.Commands = append(i.Commands, strings.Join(event.UnknownCommand.GetCommand(), " "))
+	case *LogEntry_TerminalUpdate:
+		i.TerminalName = event.TerminalUpdate.GetTerm()
+		i.IsPty = event.TerminalUpdate.GetIsPty()
+	case *LogEntry_OpenTtyLog:
+		i.TTYLog = event.OpenTtyLog.GetName()
+	}
+}
+
+func (i *InteractionReport) init() {
+	if i.interactions == nil {
+		i.interactions = make(map[string]*InteractiveSession)
+	}
+}
+
+// MarshalJSON implemnts custom JSON marshaler.
+func (i *InteractionReport) MarshalJSON() ([]byte, error) {
+	i.init()
+
+	return json.Marshal(i.interactions)
+}
+
+func (i *InteractionReport) Update(le *LogEntry) {
+	i.init()
+
+	sessionID := le.GetSessionId()
+	if sessionID == "" {
+		return
+	}
+	report, ok := i.interactions[sessionID]
+	if !ok {
+		report = &InteractiveSession{}
+		i.interactions[sessionID] = report
+	}
+
+	report.Update(le)
 }
 
 // Report holds statistics about the logged events.
