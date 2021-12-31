@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -26,6 +27,37 @@ func ReadJSONLinesLog(r io.Reader, handler func(le *LogEntry)) error {
 		handler(&logEntry)
 	}
 	return nil
+}
+
+func NewBugReport() *BugReport {
+	return &BugReport{
+		InvalidInvocations: NewPathCounter("command", "error"),
+		UnknownCommands:    NewPathCounter("command", "status", "error"),
+	}
+}
+
+// BugReport pulls events that are likely bugs in the honeypot.
+type BugReport struct {
+	LogEntries int
+
+	InvalidInvocations *PathCounter `json:"invalid_invocations"`
+	UnknownCommands    *PathCounter `json:"unknown_commands"`
+	Panics             []*Panic     `json:"panics"`
+}
+
+func (r *BugReport) Update(le *LogEntry) {
+	r.LogEntries++
+
+	switch event := le.GetLogType().(type) {
+	case *LogEntry_Panic:
+		r.Panics = append(r.Panics, event.Panic)
+	case *LogEntry_UnknownCommand:
+		msg := event.UnknownCommand
+		r.UnknownCommands.Increment(msg.Command[0], msg.GetStatus().String(), msg.ErrorMessage)
+	case *LogEntry_InvalidInvocation:
+		msg := event.InvalidInvocation
+		r.InvalidInvocations.Increment(msg.Command[0], msg.Error)
+	}
 }
 
 type InteractionReport struct {
@@ -232,4 +264,70 @@ func (s *StrCounter) Increment(toAdd string) {
 // MarshalJSON implemnts custom JSON marshaler.
 func (s StrCounter) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.internal)
+}
+
+func NewPathCounter(cols ...string) *PathCounter {
+	return &PathCounter{
+		cols:     cols,
+		internal: make(map[string]int),
+	}
+}
+
+// PathCounter counts the number of strings seen.
+type PathCounter struct {
+	cols     []string
+	internal map[string]int
+}
+
+// Increment adds one to the given key.
+func (ctr *PathCounter) Increment(toAdd ...string) {
+	if len(toAdd) != len(ctr.cols) {
+		panic("wrong number of columns to add")
+	}
+
+	ctr.internal[toKey(toAdd...)]++
+}
+
+// MarshalJSON implemnts custom JSON marshaler.
+func (ctr *PathCounter) MarshalJSON() ([]byte, error) {
+	type Count struct {
+		Count  int               `json:"count"`
+		Fields map[string]string `json:"event"`
+		Path   string            `json:"-"`
+	}
+
+	var out []Count
+	for k, v := range ctr.internal {
+		count := Count{
+			Count:  v,
+			Path:   k,
+			Fields: make(map[string]string),
+		}
+
+		splitPath := fromKey(k)
+		for colNum, colVal := range ctr.cols {
+			count.Fields[colVal] = splitPath[colNum]
+		}
+
+		out = append(out, count)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Count == out[j].Count {
+			return out[i].Path < out[j].Path
+		}
+		return out[i].Count > out[j].Count
+	})
+
+	return json.Marshal(out)
+}
+
+func toKey(vals ...string) string {
+	key, _ := json.Marshal(vals)
+	return string(key)
+}
+
+func fromKey(key string) (out []string) {
+	json.Unmarshal([]byte(key), &out)
+	return
 }

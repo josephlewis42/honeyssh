@@ -83,6 +83,7 @@ message UnknownCommand {
     UNKNOWN = 0;
     NOT_FOUND = 1; // Not found in $PATH.
     NOT_IMPLEMENTED = 2; // Executable found, but not implemented.
+    LOOKUP_ERROR = 3; // Error looking up the command..
   }
 
   // Shell parsed command string.

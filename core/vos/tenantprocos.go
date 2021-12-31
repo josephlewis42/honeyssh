@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/josephlewis42/honeyssh/core/logger"
+	"github.com/spf13/afero"
 )
 
 type TenantProcOS struct {
@@ -199,6 +199,7 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 		ea.TenantOS.eventRecorder.Record(&logger.LogEntry_UnknownCommand{
 			UnknownCommand: &logger.UnknownCommand{
 				Command:      argv,
+				Status:       logger.UnknownCommand_LOOKUP_ERROR,
 				ErrorMessage: fmt.Sprintf("honeypot err: %v FS err: %v", shellErr, execFsErr),
 			},
 		})

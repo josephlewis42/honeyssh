@@ -120,10 +120,48 @@ var interactionsCommand = &cobra.Command{
 	},
 }
 
+var bugsCommand = &cobra.Command{
+	Use:   "bugs",
+	Short: "Show events that may have been caused by bugs in the Honeypot.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+
+		config, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		fd, err := config.ReadAppLog()
+		if err != nil {
+			return err
+		}
+		defer fd.Close()
+
+		report := logger.NewBugReport()
+		if err := logger.ReadJSONLinesLog(fd, func(le *logger.LogEntry) {
+			if eventsFilter(le) {
+				report.Update(le)
+			}
+		}); err != nil {
+			return err
+		}
+
+		out, err := yaml.Marshal(report)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), string(out))
+
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(eventsCmd)
 	eventsCmd.AddCommand(summaryCommand)
 	eventsCmd.AddCommand(interactionsCommand)
+	eventsCmd.AddCommand(bugsCommand)
 
 	since = eventsCmd.Flags().Duration("since", -1, "Display events newer than a relative duration. e.g. 24h")
 	sinceTime = eventsCmd.Flags().String("since-time", "", "Display events after a specific date (RFC3339).")
