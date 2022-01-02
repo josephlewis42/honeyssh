@@ -1,20 +1,19 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sync"
+	"strings"
 	"time"
 
+	"github.com/josephlewis42/honeyssh/core/ttylog"
 	"github.com/spf13/cobra"
-	"github.com/josephlewis42/honeyssh/core"
 )
 
 var (
-	crlf = regexp.MustCompile(`\r?\n`)
+	fixKippoQuirks bool
+	idleTimeLimit  time.Duration
 )
 
 var logsCmd = &cobra.Command{
@@ -35,8 +34,11 @@ var playCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		source := createLogSource(args[0], fd)
 
-		return core.Replay(fd, cmd.OutOrStdout())
+		sink := ttylog.NewClientOutput(cmd.OutOrStdout())
+		sink = ttylog.NewRealTimePlayback(idleTimeLimit, sink)
+		return ttylog.Replay(source, applyMiddleware(sink))
 	},
 }
 
@@ -52,13 +54,16 @@ var catCommand = &cobra.Command{
 			return err
 		}
 
-		return core.Replay(fd, cmd.OutOrStdout(), core.MaxSleep(0*time.Second))
+		source := createLogSource(args[0], fd)
+		sink := ttylog.NewClientOutput(cmd.OutOrStdout())
+
+		return ttylog.Replay(source, applyMiddleware(sink))
 	},
 }
 
 // asciicastCmd converts a log to the asciicast format
 var asciicastCmd = &cobra.Command{
-	Use:   "asciicast INPUT > OUTPUT.cast",
+	Use:   "asciicast INPUT.log > OUTPUT.cast",
 	Short: "Convert a log to asciicast (asciinema) format.",
 	Long:  `Convert a recorded terminal log to asciicast (asciinema) format.`,
 	Args:  cobra.ExactArgs(1),
@@ -70,67 +75,28 @@ var asciicastCmd = &cobra.Command{
 		}
 		defer fd.Close()
 
-		writeJSONLine := func(structure interface{}) error {
-			line, err := json.Marshal(structure)
-			if err != nil {
-				return err
-			}
+		source := ttylog.NewUMLLogSource(fd)
+		sink := ttylog.NewAsciicastLogSink(cmd.OutOrStdout())
 
-			_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(line))
-			return err
-		}
-
-		// Write header line
-		if err := writeJSONLine(map[string]interface{}{
-			"version":   2,
-			"width":     80,
-			"height":    24,
-			"timestamp": 0,
-			"title":     filepath.Base(args[0]),
-			"env": map[string]interface{}{
-				"TERM":  "xterm-256color",
-				"SHELL": "/bin/bash",
-			},
-		}); err != nil {
-			return err
-		}
-
-		var startTime time.Time
-		var once sync.Once
-		var skew float64
-		var lastTimeSinceStart float64
-
-		return core.ReplayCallback(fd, func(event *core.LogEvent) error {
-			once.Do(func() {
-				startTime = event.Time
-			})
-
-			timeSinceStartSeconds := float64(event.Time.Sub(startTime)) / float64(time.Second)
-
-			// max pause of 3 seconds
-			if pause := timeSinceStartSeconds - lastTimeSinceStart; pause > 3.0 {
-				skew += -pause + 3.0
-			}
-
-			lastTimeSinceStart = timeSinceStartSeconds
-			timeSinceStartSeconds += skew
-
-			eventType := ""
-			switch event.EventType {
-			case core.EventTypeInput:
-				eventType = "i"
-			case core.EventTypeOutput:
-				eventType = "o"
-			default:
-				// Some other event, don't care.
-				return nil
-			}
-
-			replaced := crlf.ReplaceAllString(string(event.Data), "\r\n")
-			line := []interface{}{timeSinceStartSeconds, eventType, replaced}
-			return writeJSONLine(line)
-		})
+		return ttylog.Replay(source, applyMiddleware(sink))
 	},
+}
+
+func createLogSource(name string, r io.Reader) ttylog.LogSource {
+	switch strings.TrimPrefix(filepath.Ext(name), ".") {
+	case ttylog.AsciicastFileExt:
+		return ttylog.NewAsciicastLogSource(r)
+	default:
+		return ttylog.NewUMLLogSource(r)
+	}
+}
+
+func applyMiddleware(sink ttylog.LogSink) ttylog.LogSink {
+	if fixKippoQuirks {
+		sink = ttylog.NewKippoQuirksAdapter(sink)
+	}
+
+	return sink
 }
 
 func init() {
@@ -138,4 +104,13 @@ func init() {
 	logsCmd.AddCommand(playCommand)
 	logsCmd.AddCommand(asciicastCmd)
 	logsCmd.AddCommand(catCommand)
+
+	for _, cmd := range []*cobra.Command{playCommand, asciicastCmd, catCommand} {
+		cmd.Flags().BoolVar(&fixKippoQuirks, "fix-kippo", false, "Apply fixes to logs produced by Kippo.")
+	}
+
+	// cat doesn't allow idle time
+	for _, cmd := range []*cobra.Command{playCommand} {
+		cmd.Flags().DurationVarP(&idleTimeLimit, "idle-time-limit", "i", 3*time.Second, "Maximum time output can be idle. (e.g. 3s, 2m, 100ms)")
+	}
 }

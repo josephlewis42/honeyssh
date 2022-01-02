@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option go_package = "github.com/josephlewis42/honeyssh/core/ttylog";
+
+// The FD that the event was written to.
+enum FD {
+  STDIN = 0;
+  STDOUT = 1;
+  STDERR = 2;
+}
+
+message TTYLogEntry {
+  // Timestamp of the log event in micros since the UNIX epoch.
+  int64 timestamp_micros = 1;
+
+  oneof event {
+    IO io = 2;
+    Close close = 3;
+  }
+}
+
+// I/O event on an FD.
+message IO {
+  FD fd = 1;
+  bytes data = 2;
+}
+
+// Closure of an FD.
+message Close {
+  FD fd = 1;
+}

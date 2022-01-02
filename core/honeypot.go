@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/gliderlabs/ssh"
-	gossh "golang.org/x/crypto/ssh"
 	"github.com/josephlewis42/honeyssh/commands"
 	"github.com/josephlewis42/honeyssh/core/config"
 	"github.com/josephlewis42/honeyssh/core/logger"
+	"github.com/josephlewis42/honeyssh/core/ttylog"
 	"github.com/josephlewis42/honeyssh/core/vos"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 type sshContextKey struct {
@@ -191,7 +192,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	defer logFd.Close()
 
 	// Start logging the terminal interactions
-	vio := Record(vos.NewVIOAdapter(s, s, s), logFd)
+	vio := ttylog.NewRecorder(vos.NewVIOAdapter(s, s, s), ttylog.NewUMLLogSink(logFd))
 
 	procName := h.configuration.OS.DefaultShell
 	procArgs := []string{procName}

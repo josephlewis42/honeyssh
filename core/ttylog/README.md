@@ -1,6 +1,8 @@
-# Description of UML logging
+The `ttylog` package is used to capture I/O from interactive sessions.
 
-Adapted from 
+## Description of UML logging
+
+Adapted from
 [this documentation](http://user-mode-linux.sourceforge.net/old/tty_logging.html).
 
 User Mode Linux has/had a logging format that could be used for TTY
@@ -33,5 +35,3 @@ struct tty_log_buf {
     * `2` is write
 * `sec` is the seconds part of a UNIX timestamp.
 * `usec` is the microseconds part of a UNIX timestamp.
-              
-
