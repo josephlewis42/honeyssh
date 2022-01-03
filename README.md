@@ -62,9 +62,39 @@ The configuration directory has the following items:
   `gcr.io/distroless`.
 * `session_logs`: interactive session log recordings.
 
-### Viewing the logs
+### Replaying the logs
+
+Logs are found in the `session_logs` directory and are recorded in either
+User Mode Linux (`.log` extension) or Asciicast (`.cast` extension) format.
+
+```bash
+# Print full output of recorded log to a terminal:
+honeyssh logs cat path/to/some.log
+
+# Replay the log in "real time" with a maximum pause of 30 seconds:
+honeyssh logs play -i 30s path/to/some.log
+
+# Convert a log to asciicast (asciinema) format.
+honeyssh logs asciicast path/to/some.log > out.cast
+
+# Convert an old Kippo log to asciicast (asciinema) format.
+honeyssh logs asciicast --fix-kippo path/to/some.log > out.cast
+```
 
 ### Generating interaction reports
+
+`honeyssh` supports generating basic reports from the application logs file.
+Run them using `honeyssh events REPORT_NAME` where the report name is one of the
+following:
+
+* `summary` Show a summary of events.
+* `bugs` Show events that may have been caused by bugs in the Honeypot.
+* `interactions` Show a summary of interactive sessions.
+
+All reports allow the following flags:
+
+* `--since duration` Display events newer than a relative duration. e.g. 24h, 45m, 60s.
+* `--since-time` Display events after a specific date (RFC3339).
 
 ## Is it safe?
 
@@ -77,7 +107,7 @@ case.
 
 ## Contributions
 
-See CONTRIBUTING.md.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
