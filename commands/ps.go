@@ -89,11 +89,12 @@ func Ps(virtOS vos.VOS) int {
 	}
 
 	showAll := cmd.Flags().Bool('a', "show all")
+	showAllStd := cmd.Flags().Bool('e', "show all using standard syntax")
 
 	return cmd.Run(virtOS, func() int {
 		fmt.Fprintln(virtOS.Stdout(), psHeader)
 
-		if *showAll {
+		if *showAll || *showAllStd {
 			fmt.Fprintln(virtOS.Stdout(), psSystem)
 		}
 
