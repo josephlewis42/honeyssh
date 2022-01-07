@@ -163,6 +163,6 @@ func init() {
 	eventsCmd.AddCommand(interactionsCommand)
 	eventsCmd.AddCommand(bugsCommand)
 
-	since = eventsCmd.Flags().Duration("since", -1, "Display events newer than a relative duration. e.g. 24h")
-	sinceTime = eventsCmd.Flags().String("since-time", "", "Display events after a specific date (RFC3339).")
+	since = eventsCmd.PersistentFlags().Duration("since", -1, "Display events newer than a relative duration. e.g. 24h")
+	sinceTime = eventsCmd.PersistentFlags().String("since-time", "", "Display events after a specific date (RFC3339).")
 }
