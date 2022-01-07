@@ -78,7 +78,9 @@ func NewHoneypot(configuration *config.Configuration, stderr io.Writer) (*Honeyp
 	}
 
 	honeypot.sshServer = &ssh.Server{
-		Addr: fmt.Sprintf(":%d", configuration.SSHPort),
+		// Fake being an OpenSSH server
+		Version: "OpenSSH_8.2p1",
+		Addr:    fmt.Sprintf(":%d", configuration.SSHPort),
 		Handler: func(s ssh.Session) {
 			honeypot.HandleConnection(s)
 		},

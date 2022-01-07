@@ -134,6 +134,7 @@ func Wget(virtOS vos.VOS) int {
 		if err != nil {
 			return err
 		}
+		request.Header.Set("User-Agent", "Wget/1.20.2")
 
 		response, err := wgetHTTPClient.Do(request)
 		if err != nil {
