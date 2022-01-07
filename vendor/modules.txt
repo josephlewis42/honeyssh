@@ -116,11 +116,13 @@ golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
+# golang.org/x/sys v0.0.0-20210925032602-92d5a993a665
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
+# golang.org/x/term v0.0.0-20210916214954-140adaaadfaf
+## explicit; go 1.17
 # golang.org/x/text v0.3.6
 ## explicit; go 1.11
 golang.org/x/text/internal/language
@@ -164,6 +166,9 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
+# mvdan.cc/sh/v3 v3.4.2
+## explicit; go 1.16
+mvdan.cc/sh/v3/syntax
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml

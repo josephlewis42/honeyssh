@@ -11,6 +11,7 @@ import (
 	"github.com/abiosoft/readline"
 	"github.com/anmitsu/go-shlex"
 	"github.com/josephlewis42/honeyssh/core/vos"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 const (
@@ -61,7 +62,7 @@ func RunShell(virtualOS vos.VOS) int {
 			return s.lastRet
 		}
 
-		return s.runInteractive()
+		return s.runInteractive2()
 	})
 }
 
@@ -147,6 +148,176 @@ func (s *Shell) Prompt() string {
 	return unescape(prompt)
 }
 
+func (s *Shell) runInteractive2() int {
+	// runner, err := interp.New(
+	// 	interp.Dir(s.VirtualOS.Getwd()),
+	// 	interp.Env(expand.ListEnviron(s.VirtualOS.Environ()...)),
+	// 	interp.ExecHandler(func(ctx context.Context, args []string) error {
+	// 		// exechandler
+	// 		//hc := interp.HandlerCtx(ctx)
+	//
+	// 		// hc.Env
+	// 		// hc.Dir
+	// 		// hc.Stdin
+	// 		// hc.Stdout
+	// 		// hc.Stderr
+	//
+	// 		fmt.Printf("Running %q\n", args)
+	// 		return interp.NewExitStatus(0)
+	// 	}),
+	// 	interp.OpenHandler(func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
+	// 		return s.VirtualOS.OpenFile(path, flag, perm)
+	// 	}),
+	// 	// Params populates the shell options and parameters
+	// 	// interp.Params()
+	// 	interp.StdIO(s.VirtualOS.Stdin(), s.VirtualOS.Stdout(), s.VirtualOS.Stderr()),
+	// )
+	// if err != nil {
+	// 	log.Println(err)
+	// 	fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
+	// 	return 1
+	// }
+	// runner.Reset()
+
+	for !s.Quit {
+		s.Readline.SetPrompt(s.Prompt())
+		line, err := s.Readline.Readline()
+
+		// This doesn't make sense for shell, but it needs to be kept in line with
+		// the readline history.
+		s.history = append(s.history, line)
+
+		switch {
+		case err == io.EOF:
+			return 1 // Input closed, quit.
+
+		case err == readline.ErrInterrupt:
+			// Interrupt clears line.
+			continue
+		case err != nil:
+			log.Printf("Error readline: %v", err)
+			continue
+
+		case len(line) == 0:
+			continue // empty line
+
+		default:
+			prog, err := syntax.NewParser().Parse(strings.NewReader(line), "")
+			if err != nil {
+				fmt.Fprintf(s.Readline, "sh: syntax error: %v\n", err)
+				continue
+			}
+			s.executeFile(prog)
+		}
+	}
+	return 0
+}
+
+func (s *Shell) executeFile(file *syntax.File) {
+	for _, stmt := range file.Stmts {
+		s.executeStatement(execContext{}, stmt)
+	}
+}
+
+type execContext struct {
+	stdin  io.Reader
+	stdout io.Writer
+	stderr io.Writer
+
+	env []string
+}
+
+func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
+	// set up redirects
+
+	// run command
+	switch cmd := stmt.Cmd.(type) {
+	case *syntax.CallExpr:
+		// if assign and no command -> set global env
+
+		// evaluate assigns
+		fmt.Fprintln(s.Readline, "call")
+		syntax.DebugPrint(s.Readline, cmd)
+		return nil
+	case *syntax.BinaryCmd:
+		switch cmd.Op {
+		case syntax.AndStmt:
+			if err := s.executeStatement(ec, cmd.X); err != nil {
+				return err
+			}
+			if s.lastRet == 0 {
+				return s.executeStatement(ec, cmd.Y)
+			}
+			return nil
+		case syntax.OrStmt:
+			if err := s.executeStatement(ec, cmd.X); err != nil {
+				return err
+			}
+			if s.lastRet != 0 {
+				return s.executeStatement(ec, cmd.Y)
+			}
+			return nil
+		case syntax.Pipe:
+			fmt.Fprintln(s.Readline, "PIPE")
+			if err := s.executeStatement(ec, cmd.X); err != nil {
+				return err
+			}
+
+			if err := s.executeStatement(ec, cmd.Y); err != nil {
+				return err
+			}
+			return nil
+		default:
+			// Fail for unknown operations.
+		}
+	default:
+		// Fail for other types of statements
+	}
+
+	return fmt.Errorf("syntax error near: %s", stmt.Pos())
+}
+
+func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]string, error) {
+	var out []string
+
+	for _, assmt := range assignments {
+		if assmt.Name == nil {
+			continue
+		}
+		key := assmt.Name.Value
+		var value string
+		if word := assmt.Value; word != nil {
+			for _, part := range word.Parts {
+				switch part := part.(type) {
+				case *syntax.Lit:
+					value += part.Value
+				case *syntax.ParamExp:
+					param := part.Param
+					if param == nil {
+						fmt.Errorf("syntax error near: %s", param.Pos())
+					}
+					// lookup param.Value
+				}
+			}
+
+			// word -> wordpart
+		}
+
+		value := assmt.Value
+	}
+	// A=B AA=$A$A echo $AA
+	//
+	// A=B AA=$A$A
+	// echo $AA
+	// BB
+	//
+	// A=B AA=$A$A env
+	// A=B
+	// AA=BB
+
+	return out, nil
+}
+
 func (s *Shell) runInteractive() int {
 	for !s.Quit {
 		s.Readline.SetPrompt(s.Prompt())
@@ -180,7 +351,7 @@ func (s *Shell) runInteractive() int {
 func (s *Shell) runCommand(command string) {
 	tokens, err := shlex.Split(command, true)
 	if err != nil {
-		fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
+		fmt.Fprintln(s.Readline, "sh: syntax error: unexpected end of file")
 		return
 	}
 	if len(tokens) == 0 {
@@ -188,12 +359,12 @@ func (s *Shell) runCommand(command string) {
 	}
 
 	// Take off command environment variables
-	effectiveEnv := s.VirtualOS.Environ()
+	var assignments []string
 	var cmdEnvStop int
 	for ; cmdEnvStop < len(tokens); cmdEnvStop++ {
 		tok := tokens[cmdEnvStop]
 		if strings.Contains(tok, "=") {
-			effectiveEnv = append(effectiveEnv, tok)
+			assignments = append(assignments, tok)
 		} else {
 			break
 		}
@@ -204,24 +375,32 @@ func (s *Shell) runCommand(command string) {
 	// If the full command was environment variables, set them. Otherwise they
 	// should only be populated for the upcoming command.
 	if 0 == len(tokens) {
-		vos.CopyEnv(s.VirtualOS, effectiveEnv)
+		vos.CopyEnv(s.VirtualOS, assignments)
 		return
 	}
 
 	// Expand the environment
 	for i, tok := range tokens {
-		mapEnv := vos.NewMapEnvFromEnvList(effectiveEnv)
-
-		// Shell only arguments
-		mapEnv.Setenv("$", fmt.Sprintf("%d", s.VirtualOS.Getpid()))
-		mapEnv.Setenv("?", fmt.Sprintf("%d", uint8(s.lastRet)))
-		mapEnv.Setenv("WIDTH", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width))
-		mapEnv.Setenv("HEIGHT", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height))
-
+		mapEnv := s.cmdEnv()
+		vos.CopyEnv(mapEnv, assignments)
 		tokens[i] = os.Expand(tok, mapEnv.Getenv)
 	}
 
-	s.ExecuteProgramOrBuiltin(effectiveEnv, tokens)
+	s.ExecuteProgramOrBuiltin(append(s.VirtualOS.Environ(), assignments...), tokens)
+}
+
+// cmdEnv returns a new copy of the VOS environment with special variables set
+// for shell expansion.
+func (s *Shell) cmdEnv() vos.VEnv {
+	mapEnv := vos.NewMapEnvFromEnvList(s.VirtualOS.Environ())
+
+	// Shell only arguments
+	mapEnv.Setenv("$", fmt.Sprintf("%d", s.VirtualOS.Getpid()))
+	mapEnv.Setenv("?", fmt.Sprintf("%d", uint8(s.lastRet)))
+	mapEnv.Setenv("WIDTH", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Width))
+	mapEnv.Setenv("HEIGHT", fmt.Sprintf("%d", s.VirtualOS.GetPTY().Height))
+
+	return mapEnv
 }
 
 func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
