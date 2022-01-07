@@ -92,7 +92,7 @@ func newReadline(virtOS vos.VOS) (*readline.Instance, error) {
 func Wget(virtOS vos.VOS) int {
 	cmd := &SimpleCommand{
 		Use:   "wget [OPTION...] [URL]...",
-		Short: "Remove empty directories.",
+		Short: "Network downloader.",
 
 		NeverBail: true,
 	}
