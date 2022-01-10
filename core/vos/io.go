@@ -11,20 +11,11 @@ type VIOAdapter struct {
 	IStderr io.WriteCloser
 }
 
-func NewVIOAdapter(stdin io.ReadCloser, stdout, stderr io.WriteCloser) *VIOAdapter {
-	if stdin == nil {
-		stdin = &devNull{}
-	}
-	if stdout == nil {
-		stdout = &devNull{}
-	}
-	if stderr == nil {
-		stderr = &devNull{}
-	}
+func NewVIOAdapter(stdin io.Reader, stdout, stderr io.Writer) *VIOAdapter {
 	return &VIOAdapter{
-		IStdin:  stdin,
-		IStdout: stdout,
-		IStderr: stderr,
+		IStdin:  toReadCloserOrDiscard(stdin),
+		IStdout: toWriteCloserOrDiscard(stdout),
+		IStderr: toWriteCloserOrDiscard(stderr),
 	}
 }
 
@@ -47,6 +38,34 @@ func (pr *VIOAdapter) Stdout() io.WriteCloser {
 func (pr *VIOAdapter) Stderr() io.WriteCloser {
 	return pr.IStderr
 }
+
+func toWriteCloserOrDiscard(w io.Writer) io.WriteCloser {
+	if w == nil {
+		return &devNull{}
+	}
+	if wc, ok := w.(io.WriteCloser); ok {
+		return wc
+	}
+
+	return nopWriteCloser{w}
+}
+
+func toReadCloserOrDiscard(r io.Reader) io.ReadCloser {
+	if r == nil {
+		return &devNull{}
+	}
+	if rc, ok := r.(io.ReadCloser); ok {
+		return rc
+	}
+
+	return io.NopCloser(r)
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error { return nil }
 
 // devNull implemnets io.Reader and io.Writer, always closing for reads and
 // discarding writes.
