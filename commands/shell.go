@@ -123,7 +123,7 @@ func (s *Shell) Init(username string) {
 	s.VirtualOS.Setenv(EnvUID, fmt.Sprintf("%d", s.VirtualOS.Getuid()))
 }
 
-func (s *Shell) Prompt() string {
+func (s *Shell) prompt() string {
 	prompt := s.VirtualOS.Getenv(EnvPrompt)
 	if prompt == "" {
 		prompt = DefaultPrompt
@@ -148,39 +148,17 @@ func (s *Shell) Prompt() string {
 	return unescape(prompt)
 }
 
+func newSyntaxError(node syntax.Node) error {
+	return fmt.Errorf("syntax error near: %d", node.Pos().Col())
+}
+
 func (s *Shell) runInteractive2() int {
-	// runner, err := interp.New(
-	// 	interp.Dir(s.VirtualOS.Getwd()),
-	// 	interp.Env(expand.ListEnviron(s.VirtualOS.Environ()...)),
-	// 	interp.ExecHandler(func(ctx context.Context, args []string) error {
-	// 		// exechandler
-	// 		//hc := interp.HandlerCtx(ctx)
-	//
-	// 		// hc.Env
-	// 		// hc.Dir
-	// 		// hc.Stdin
-	// 		// hc.Stdout
-	// 		// hc.Stderr
-	//
-	// 		fmt.Printf("Running %q\n", args)
-	// 		return interp.NewExitStatus(0)
-	// 	}),
-	// 	interp.OpenHandler(func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
-	// 		return s.VirtualOS.OpenFile(path, flag, perm)
-	// 	}),
-	// 	// Params populates the shell options and parameters
-	// 	// interp.Params()
-	// 	interp.StdIO(s.VirtualOS.Stdin(), s.VirtualOS.Stdout(), s.VirtualOS.Stderr()),
-	// )
-	// if err != nil {
-	// 	log.Println(err)
-	// 	fmt.Fprintln(s.Readline, "-bash: syntax error: unexpected end of file")
-	// 	return 1
-	// }
-	// runner.Reset()
+	// 0 - stdin, the standard input stream.
+	// 1 - stdout, the standard output stream.
+	// 2 - stderr, the standard error stream.
 
 	for !s.Quit {
-		s.Readline.SetPrompt(s.Prompt())
+		s.Readline.SetPrompt(s.prompt())
 		line, err := s.Readline.Readline()
 
 		// This doesn't make sense for shell, but it needs to be kept in line with
@@ -207,16 +185,22 @@ func (s *Shell) runInteractive2() int {
 				fmt.Fprintf(s.Readline, "sh: syntax error: %v\n", err)
 				continue
 			}
-			s.executeFile(prog)
+			if err := s.executeFile(prog); err != nil {
+				fmt.Fprintf(s.Readline, "sh: %v\n", err)
+				continue
+			}
 		}
 	}
 	return 0
 }
 
-func (s *Shell) executeFile(file *syntax.File) {
+func (s *Shell) executeFile(file *syntax.File) error {
 	for _, stmt := range file.Stmts {
-		s.executeStatement(execContext{}, stmt)
+		if err := s.executeStatement(execContext{}, stmt); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 type execContext struct {
@@ -229,14 +213,33 @@ type execContext struct {
 
 func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 	// set up redirects
+	syntax.DebugPrint(s.Readline, stmt)
+
+	// RdrOut   // >
+	// RdrIn    // <
+	// RdrAll   // &>
 
 	// run command
 	switch cmd := stmt.Cmd.(type) {
 	case *syntax.CallExpr:
-		// if assign and no command -> set global env
+		// TODO: if assign and no command -> set global env
+		assigns, err := s.evalAssign(ec, cmd.Assigns)
+		if err != nil {
+			return err
+		}
 
-		// evaluate assigns
+		var args []string
+		for _, word := range cmd.Args {
+			argStr, err := s.evalWord(ec, word)
+			if err != nil {
+				return err
+			}
+			args = append(args, argStr)
+		}
+
 		fmt.Fprintln(s.Readline, "call")
+		fmt.Fprintln(s.Readline, assigns)
+		fmt.Fprintln(s.Readline, args)
 		syntax.DebugPrint(s.Readline, cmd)
 		return nil
 	case *syntax.BinaryCmd:
@@ -248,7 +251,6 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 			if s.lastRet == 0 {
 				return s.executeStatement(ec, cmd.Y)
 			}
-			return nil
 		case syntax.OrStmt:
 			if err := s.executeStatement(ec, cmd.X); err != nil {
 				return err
@@ -256,9 +258,7 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 			if s.lastRet != 0 {
 				return s.executeStatement(ec, cmd.Y)
 			}
-			return nil
 		case syntax.Pipe:
-			fmt.Fprintln(s.Readline, "PIPE")
 			if err := s.executeStatement(ec, cmd.X); err != nil {
 				return err
 			}
@@ -266,19 +266,19 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 			if err := s.executeStatement(ec, cmd.Y); err != nil {
 				return err
 			}
-			return nil
 		default:
 			// Fail for unknown operations.
+			return newSyntaxError(stmt)
 		}
-	default:
-		// Fail for other types of statements
 	}
 
-	return fmt.Errorf("syntax error near: %s", stmt.Pos())
+	// Fail for other types of statements
+	return newSyntaxError(stmt)
 }
 
 func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]string, error) {
-	var out []string
+	out := vos.NewMapEnv()
+	tmpEnv := vos.NewMapEnvFromEnvList(ec.env)
 
 	for _, assmt := range assignments {
 		if assmt.Name == nil {
@@ -294,16 +294,17 @@ func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]stri
 				case *syntax.ParamExp:
 					param := part.Param
 					if param == nil {
-						fmt.Errorf("syntax error near: %s", param.Pos())
+						return nil, newSyntaxError(word)
 					}
-					// lookup param.Value
+					value += tmpEnv.Getenv(param.Value)
+				default:
+					return nil, newSyntaxError(word)
 				}
 			}
-
-			// word -> wordpart
 		}
 
-		value := assmt.Value
+		tmpEnv.Setenv(key, value)
+		out.Setenv(key, value)
 	}
 	// A=B AA=$A$A echo $AA
 	//
@@ -315,12 +316,60 @@ func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]stri
 	// A=B
 	// AA=BB
 
-	return out, nil
+	return out.Environ(), nil
+}
+
+func (s *Shell) evalWord(ec execContext, word *syntax.Word) (string, error) {
+	if word == nil {
+		return "", nil
+	}
+	var out []string
+
+	for _, part := range word.Parts {
+		subEval, err := s.evalWordPart(ec, part)
+		if err != nil {
+			return "", err
+		}
+		out = append(out, subEval)
+	}
+	return strings.Join(out, ""), nil
+}
+
+func (s *Shell) evalWordPart(ec execContext, part syntax.WordPart) (string, error) {
+	switch part := part.(type) {
+	case *syntax.Lit:
+		return part.Value, nil
+
+	case *syntax.SglQuoted:
+		return part.Value, nil
+
+	case *syntax.DblQuoted:
+		var out []string
+		for _, subPart := range part.Parts {
+			subEval, err := s.evalWordPart(ec, subPart)
+			if err != nil {
+				return "", err
+			}
+			out = append(out, subEval)
+		}
+		return strings.Join(out, ""), nil
+
+	case *syntax.ParamExp:
+		param := part.Param
+		if param == nil {
+			return "", newSyntaxError(part)
+		}
+		tmpEnv := vos.NewMapEnvFromEnvList(ec.env)
+		return tmpEnv.Getenv(param.Value), nil
+
+	default:
+		return "", newSyntaxError(part)
+	}
 }
 
 func (s *Shell) runInteractive() int {
 	for !s.Quit {
-		s.Readline.SetPrompt(s.Prompt())
+		s.Readline.SetPrompt(s.prompt())
 		line, err := s.Readline.Readline()
 
 		// This doesn't make sense for shell, but it needs to be kept in line with
@@ -405,6 +454,9 @@ func (s *Shell) cmdEnv() vos.VEnv {
 
 func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
 	if len(args) == 0 {
+		// If the full command was environment variables, set them. Otherwise they
+		// should only be populated for the upcoming command.
+		vos.CopyEnv(s.VirtualOS, cmdEnv)
 		return
 	}
 
@@ -414,14 +466,7 @@ func (s *Shell) ExecuteProgramOrBuiltin(cmdEnv []string, args []string) {
 		return
 	}
 
-	s.ExecuteProgram(cmdEnv, args)
-}
-
-func (s *Shell) ExecuteProgram(cmdEnv []string, args []string) {
-	if len(args) == 0 {
-		return
-	}
-
+	// Execute program
 	proc, err := s.VirtualOS.StartProcess(args[0], args, &vos.ProcAttr{
 		Env:   cmdEnv,
 		Files: s.VirtualOS,
