@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/josephlewis42/honeyssh/commands"
 	"github.com/josephlewis42/honeyssh/core/config"
 	"github.com/josephlewis42/honeyssh/core/vos"
 	"github.com/josephlewis42/honeyssh/core/vos/vostest"
+	"github.com/spf13/cobra"
 )
 
 type playgroundSession struct {
@@ -82,6 +82,10 @@ var playgroundCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		// Add a honeypot to the hostname to help differentiate the fake shell from
+		// a real one -- it's surprisingly convincing.
+		cfg.Uname.Nodename = "playground🍯"
 
 		fs, err := vos.NewVFSFromConfig(cfg)
 		if err != nil {

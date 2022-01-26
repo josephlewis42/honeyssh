@@ -107,8 +107,8 @@ func (s *Shell) Init(username string) {
 	} else {
 		homedir = fmt.Sprintf("/home/%s", username)
 	}
-
 	s.VirtualOS.Setenv(EnvHome, homedir)
+
 	// Use chdir in case the dir doesn't exist.
 	_ = s.VirtualOS.Chdir(homedir)
 	host := s.VirtualOS.Hostname()
@@ -319,15 +319,6 @@ func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]stri
 		tmpEnv.Setenv(key, value)
 		out.Setenv(key, value)
 	}
-	// A=B AA=$A$A echo $AA
-	//
-	// A=B AA=$A$A
-	// echo $AA
-	// BB
-	//
-	// A=B AA=$A$A env
-	// A=B
-	// AA=BB
 
 	return out.Environ(), nil
 }

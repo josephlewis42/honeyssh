@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/anmitsu/go-shlex"
-	"github.com/sebdah/goldie/v2"
 	"github.com/josephlewis42/honeyssh/core/vos"
 	"github.com/josephlewis42/honeyssh/core/vos/vostest"
+	"github.com/sebdah/goldie/v2"
 )
 
 func ExampleBytesToHuman() {
@@ -57,6 +57,14 @@ func (gts goldenTestSuite) Run(t *testing.T, cmd vos.ProcessFunc) {
 	for tn, tc := range gts {
 		t.Run(tn, func(t *testing.T) {
 			cmd := vostest.Command(cmd, tc.Args[0], tc.Args[1:]...)
+			cmd.ProcessResolver = func(command string) vos.ProcessFunc {
+				p := BuiltinProcessResolver(command)
+				if p == nil {
+					t.Fatalf("couldn't resolve process: %q", command)
+				}
+				return p
+			}
+
 			out, err := cmd.CombinedOutput()
 			if err != nil {
 				t.Fatal(err)

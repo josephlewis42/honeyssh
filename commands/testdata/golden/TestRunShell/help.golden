@@ -1,0 +1,6 @@
+usage: sh [options] ...
+Standard command interpreter for the system. Currently being changed to conform with the POSIX 1003.2 standard.
+
+Flags:
+ -c value    Command
+ -h, --help  show this help and exit
