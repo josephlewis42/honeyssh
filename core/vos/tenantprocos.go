@@ -54,6 +54,11 @@ func (ea *TenantProcOS) Getuid() int {
 	return ea.UID
 }
 
+// Setuid sets the numeric user id of the caller.
+func (ea *TenantProcOS) Setuid(UID int) {
+	ea.UID = UID
+}
+
 // Getwd implements VOS.Getwd.
 func (ea *TenantProcOS) Getwd() (dir string) {
 	return ea.Dir
