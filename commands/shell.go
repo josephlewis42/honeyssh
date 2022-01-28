@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 
@@ -148,8 +147,11 @@ func (s *Shell) prompt() string {
 	return unescape(prompt)
 }
 
-func newSyntaxError(node syntax.Node) error {
-	syntax.DebugPrint(os.Stderr, node)
+func (s *Shell) logSyntaxError(node syntax.Node) error {
+	buf := &bytes.Buffer{}
+	syntax.DebugPrint(buf, node)
+	s.VirtualOS.LogInvalidInvocation(fmt.Errorf("sh syntax error: %s", buf.String()))
+
 	return fmt.Errorf("syntax error near: %d", node.Pos().Col())
 }
 
@@ -189,7 +191,7 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 	for _, redirect := range stmt.Redirs {
 		// Only support output indirection (>)
 		if redirect.Op != syntax.RdrOut && redirect.Op != syntax.DplOut {
-			return newSyntaxError(redirect)
+			return s.logSyntaxError(redirect)
 		}
 
 		from := ""
@@ -204,11 +206,11 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 		case "2": // stderr
 			fromWriter = &ec.stderr
 		default:
-			return newSyntaxError(redirect)
+			return s.logSyntaxError(redirect)
 		}
 
 		if redirect.Word == nil {
-			return newSyntaxError(redirect)
+			return s.logSyntaxError(redirect)
 		}
 		to, err := s.evalWord(ec, redirect.Word)
 		if err != nil {
@@ -216,7 +218,7 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 		}
 		switch {
 		case to == "":
-			return newSyntaxError(redirect)
+			return s.logSyntaxError(redirect)
 		case redirect.Op == syntax.DplOut && to == "1":
 			*fromWriter = ec.stdout
 		case redirect.Op == syntax.DplOut && to == "2":
@@ -279,11 +281,11 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 			}
 		default:
 			// Fail for unknown operations.
-			return newSyntaxError(stmt)
+			return s.logSyntaxError(stmt)
 		}
 	default:
 		// Fail for other types of statements
-		return newSyntaxError(stmt)
+		return s.logSyntaxError(stmt)
 	}
 
 	return nil
@@ -307,11 +309,11 @@ func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]stri
 				case *syntax.ParamExp:
 					param := part.Param
 					if param == nil {
-						return nil, newSyntaxError(word)
+						return nil, s.logSyntaxError(word)
 					}
 					value += tmpEnv.Getenv(param.Value)
 				default:
-					return nil, newSyntaxError(word)
+					return nil, s.logSyntaxError(word)
 				}
 			}
 		}
@@ -361,13 +363,13 @@ func (s *Shell) evalWordPart(ec execContext, part syntax.WordPart) (string, erro
 	case *syntax.ParamExp:
 		param := part.Param
 		if param == nil {
-			return "", newSyntaxError(part)
+			return "", s.logSyntaxError(part)
 		}
 		tmpEnv := vos.NewMapEnvFromEnvList(ec.env)
 		return tmpEnv.Getenv(param.Value), nil
 
 	default:
-		return "", newSyntaxError(part)
+		return "", s.logSyntaxError(part)
 	}
 }
 

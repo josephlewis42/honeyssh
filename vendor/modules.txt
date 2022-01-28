@@ -121,8 +121,6 @@ golang.org/x/sync/errgroup
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# golang.org/x/term v0.0.0-20210916214954-140adaaadfaf
-## explicit; go 1.17
 # golang.org/x/text v0.3.6
 ## explicit; go 1.11
 golang.org/x/text/internal/language

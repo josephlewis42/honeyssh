@@ -114,6 +114,14 @@ message OpenFile {
 message InvalidInvocation {
   repeated string command = 1;
   string error = 2;
+  // The name of the file logging the error.
+  string source_file = 3;
+  // The line of the file logging the error.
+  uint32 source_line = 4;
+  // The module version of the program.
+  string mod_version = 5;
+  // The checksum of the program.
+  string mod_sum = 6;
 }
 
 // A set of credentials that the honeypot collected.

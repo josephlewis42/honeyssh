@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -223,11 +224,23 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 }
 
 func (ea *TenantProcOS) LogInvalidInvocation(err error) {
+	invalidInvocationPtr := &logger.InvalidInvocation{
+		Command: ea.Args(),
+		Error:   err.Error(),
+	}
+
+	if buildInfo, ok := debug.ReadBuildInfo(); ok {
+		invalidInvocationPtr.ModVersion = buildInfo.Main.Version
+		invalidInvocationPtr.ModSum = buildInfo.Main.Sum
+	}
+
+	if _, file, line, ok := runtime.Caller(1); ok {
+		invalidInvocationPtr.SourceFile = file
+		invalidInvocationPtr.SourceLine = uint32(line)
+	}
+
 	ea.TenantOS.eventRecorder.Record(&logger.LogEntry_InvalidInvocation{
-		InvalidInvocation: &logger.InvalidInvocation{
-			Command: ea.Args(),
-			Error:   err.Error(),
-		},
+		InvalidInvocation: invalidInvocationPtr,
 	})
 }
 
