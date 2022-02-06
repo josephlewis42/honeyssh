@@ -57,8 +57,14 @@ func NewDeterministicOS(resolver vos.ProcessResolver) vos.VOS {
 
 // Cmd is similar to exec.Cmd.
 type Cmd struct {
-	// Process function
+	// Process function, will be run with any process name unless ProcessResolver
+	// is set.
 	Process vos.ProcessFunc
+
+	// ProcessResolver to use if process name doesn't match Argv[0]. If not
+	// supplied, Process is always used.
+	ProcessResolver func(path string) vos.ProcessFunc
+
 	// Process arguments, the first argument should be the process name.
 	Argv []string
 	// If Dir is non-empty, the child changes into the directory before
@@ -82,7 +88,11 @@ type Cmd struct {
 }
 
 func (c *Cmd) processResolver(path string) vos.ProcessFunc {
-	return c.Process
+	if path == c.Argv[0] || c.ProcessResolver == nil {
+		return c.Process
+	}
+
+	return c.ProcessResolver(path)
 }
 
 func Command(process vos.ProcessFunc, name string, arg ...string) *Cmd {
@@ -113,7 +123,7 @@ func (c *Cmd) Run() error {
 	runner, err := c.VOS.StartProcess(c.Argv[0], c.Argv, &vos.ProcAttr{
 		Dir:   c.Dir,
 		Env:   c.Env,
-		Files: vos.NewVIOAdapter(io.NopCloser(c.Stdin), newWriteCloser(c.Stdout), newWriteCloser(c.Stderr)),
+		Files: vos.NewVIOAdapter(c.Stdin, c.Stdout, c.Stderr),
 	})
 	if err != nil {
 		return err
@@ -126,18 +136,5 @@ func (c *Cmd) Run() error {
 	}
 
 	c.ExitStatus = runner.Run()
-	return nil
-}
-
-func newWriteCloser(w io.Writer) io.WriteCloser {
-	if w == nil {
-		return nil
-	}
-	return &writeCloser{w}
-}
-
-type writeCloser struct{ io.Writer }
-
-func (writeCloser) Close() error {
 	return nil
 }

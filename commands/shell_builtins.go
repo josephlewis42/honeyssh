@@ -129,7 +129,7 @@ func NopBuiltin(s *Shell, args []string) int {
 
 func Sudo(s *Shell, args []string) int {
 	remainder := args[1:]
-	s.ExecuteProgram(s.VirtualOS.Environ(), remainder)
+	s.runCommand(strings.Join(remainder, " "))
 	return s.lastRet
 }
 

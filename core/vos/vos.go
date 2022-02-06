@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/josephlewis42/honeyssh/core/logger"
+	"github.com/spf13/afero"
 )
 
 // Utsname mimics POSIX sys/utsname.h
@@ -81,6 +81,9 @@ type VProc interface {
 
 	// Getuid returns the numeric user id of the caller.
 	Getuid() int
+
+	// Setuid sets the numeric user id of the caller.
+	Setuid(int)
 
 	// Returns the arguments to the current process.
 	Args() []string
