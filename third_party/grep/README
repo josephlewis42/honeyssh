@@ -1,0 +1,5 @@
+A version of `grep` adapted to work with Webassembly.
+
+```
+cd src && make grep-wasm && make clean
+```
