@@ -2,3 +2,4 @@ logs/*
 *.tar
 honeyssh
 honeycfg
+.*
