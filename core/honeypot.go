@@ -194,7 +194,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	defer logFd.Close()
 
 	// Start logging the terminal interactions
-	vio := ttylog.NewRecorder(vos.NewVIOAdapter(s, s, s), ttylog.NewUMLLogSink(logFd))
+	vio := ttylog.NewRecorder(vos.NewVIOAdapter(s, s, s), ttylog.NewAsciicastLogSink(logFd))
 
 	procName := h.configuration.OS.DefaultShell
 	procArgs := []string{procName}
