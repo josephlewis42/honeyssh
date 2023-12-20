@@ -180,7 +180,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	})
 
 	// Set up I/O and loging.
-	logFileName := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339Nano))
+	logFileName := fmt.Sprintf("%s.%s", time.Now().Format(time.RFC3339Nano), ttylog.AsciicastFileExt)
 	sessionLogger.Record(&logger.LogEntry_OpenTtyLog{
 		OpenTtyLog: &logger.OpenTTYLog{
 			Name: logFileName,
