@@ -1,17 +1,20 @@
-# Honey SSH
+# 🍯 HoneySSH
 
-A medium-interaction honeypot in the spirit of
-[Kippo](https://www.honeynet.org/projects/old/kippo/).
+HoneySSH is a medium interaction honeypot that provides attackers a fully simulated 
+Linux shell to play in.
+
+All commands are simulated and run in a per-session sandbox that's destroyed on
+disconnect.
 
 Features include:
 
-* Interactive shell with 50+ built-in commands
-* Download saving (via `scp` and `wget`)
-* Session recording and playback
-* Custom base file systems
-* In-memory interactive file system
-* Report generator
-* Machine-readable JSON log
+* A relistic interactive shell.
+* 50+ built-in POSIX commands.
+* Payloads are captured with the fake `scp`, `wget` and `curl` commands for later analysis.
+* Asciicast compatible session keystroke recording and playback.
+* In-memory interactive file system.
+* Reporting capabilities.
+* Machine-readable JSON event log.
 
 ## Documentation
 
@@ -115,3 +118,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Additional licenses can be found in the `third_party/` and `vendor/`
 directories.
+
+## Credits
+
+* Inspired by the now defunct [Kippo](https://www.honeynet.org/projects/old/kippo/) project.
