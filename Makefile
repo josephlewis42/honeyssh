@@ -17,3 +17,8 @@ run: build
 .PHONY: play
 play: build
 	./honeyssh playground
+
+.PHONY: setup
+setup:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install github.com/mitchellh/protoc-gen-go-json@latest
