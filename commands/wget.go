@@ -100,7 +100,22 @@ func Wget(virtOS vos.VOS) int {
 	quietPtr := cmd.Flags().Bool('q', "Quiet mode, don't display output")
 	outputPtr := cmd.Flags().StringLong("output-document", 'O', "", "Destination name")
 
+	lastArgLookedLikeFlag := false
 	return cmd.RunEachArg(virtOS, func(rawURL string) error {
+		// The honeypot's flag parsing is limited, don't try to download things that look like flags
+		// or their arguments.
+		if strings.HasPrefix(rawURL, "-") {
+			virtOS.LogInvalidInvocation(fmt.Errorf("flag parsed as argument: %q", rawURL))
+			lastArgLookedLikeFlag = true
+			return nil
+		}
+		if lastArgLookedLikeFlag && !strings.Contains(rawURL, ".") {
+			lastArgLookedLikeFlag = false
+			virtOS.LogInvalidInvocation(fmt.Errorf("argument received that doens't look like a URL, probably missing flag? %q", rawURL))
+			return nil
+		}
+		lastArgLookedLikeFlag = false
+
 		// Do this first, otherwise url.Parse has issues paring URLs with ports.
 		if !strings.Contains(rawURL, "://") {
 			rawURL = "http://" + rawURL
