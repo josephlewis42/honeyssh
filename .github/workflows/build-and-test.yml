@@ -24,6 +24,9 @@ jobs:
       with:
         go-version: '1.21'
 
+    - name: Install protoc-gen-go
+      run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
     - name: Build
       run: make build
 
