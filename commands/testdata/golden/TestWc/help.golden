@@ -1,0 +1,9 @@
+usage: wc [-c|-m] [-lw] [FILE...]
+Write the number of newlines, words, and bytes contained in each input file to the standard output.
+
+Flags:
+ -c, --c     write the number of bytes in each file
+ -h, --help  show this help and exit
+ -l, --l     write the number of newlines in each file
+ -m, --m     write the number of characters in each file
+ -w, --w     write the number of words in each file

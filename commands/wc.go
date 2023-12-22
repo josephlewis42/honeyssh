@@ -20,6 +20,7 @@ type wcCount struct {
 
 func (w *wcCount) Write(data []byte) (int, error) {
 	for _, c := range data {
+		isFirstByte := w.bytes == 0
 		w.bytes++
 
 		// Assume UTF-8 characters. Bytes following the leading byte always
@@ -33,12 +34,11 @@ func (w *wcCount) Write(data []byte) (int, error) {
 		}
 
 		if unicode.IsSpace(rune(c)) {
-			if !w.inSpace {
-				w.words++
-			}
-
 			w.inSpace = true
 		} else {
+			if w.inSpace || isFirstByte {
+				w.words++
+			}
 			w.inSpace = false
 		}
 	}
