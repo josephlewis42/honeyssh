@@ -8,18 +8,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCat(t *testing.T) {
+func TestWc(t *testing.T) {
 	cases := goldenTestSuite{
-		"no-arg":  {[]string{"cat"}},
-		"help":    {[]string{"cat", "--help"}},
-		"missing": {[]string{"cat", "does not exist.txt"}},
+		"no-arg":  {[]string{"wc"}},
+		"help":    {[]string{"wc", "--help"}},
+		"missing": {[]string{"wc", "does not exist.txt"}},
 	}
 
-	cases.Run(t, Cat)
+	cases.Run(t, Wc)
 }
 
-func TestCat_files(t *testing.T) {
-	cmd := vostest.Command(Cat, "cat", "/foo.txt")
+func TestWc_single_file(t *testing.T) {
+	cmd := vostest.Command(Wc, "wc", "/foo.txt")
 
 	// Test with missing file
 	{
@@ -29,13 +29,13 @@ func TestCat_files(t *testing.T) {
 	}
 	{
 		// Create file and
-		helloWorld := []byte("Hello, world!")
+		helloWorld := []byte("Hello,\nworld !")
 		assert.Nil(t, afero.WriteFile(cmd.VOS, "/foo.txt", helloWorld, 0600))
 
 		out, err := cmd.CombinedOutput()
 
 		assert.Equal(t, 0, cmd.ExitStatus, "exit code")
 		assert.Nil(t, err)
-		assert.Equal(t, string(helloWorld), string(out))
+		assert.Equal(t, "1 3 14 /foo.txt\n", string(out))
 	}
 }
