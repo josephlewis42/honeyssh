@@ -189,7 +189,7 @@ func (ea *TenantProcOS) StartProcess(name string, argv []string, attr *ProcAttr)
 
 		ea.TenantOS.eventRecorder.Record(&logger.LogEntry_UnknownCommand{
 			UnknownCommand: &logger.UnknownCommand{
-				Command: ea.Args(),
+				Command: argv,
 				Status:  logger.UnknownCommand_NOT_IMPLEMENTED,
 			},
 		})
