@@ -10,8 +10,8 @@ import (
 
 	"github.com/fatih/color"
 	fcolor "github.com/fatih/color"
-	getopt "github.com/pborman/getopt/v2"
 	"github.com/josephlewis42/honeyssh/core/vos"
+	getopt "github.com/pborman/getopt/v2"
 )
 
 // Always generate golden files on generate, a diff indicates a problem and
@@ -200,7 +200,7 @@ func (s *SimpleCommand) RunEachArg(virtOS vos.VOS, callback func(string) error) 
 
 		for _, arg := range s.Flags().Args() {
 			if err := callback(arg); err != nil {
-				fmt.Fprintf(virtOS.Stderr(), "%s: %s\n", s.Flags().Program(), err.Error())
+				s.LogProgramError(virtOS, err)
 				anyErrored = true
 			}
 		}
@@ -216,11 +216,53 @@ func (s *SimpleCommand) RunEachArg(virtOS vos.VOS, callback func(string) error) 
 func (s *SimpleCommand) RunE(virtOS vos.VOS, callback func() error) int {
 	return s.Run(virtOS, func() int {
 		if err := callback(); err != nil {
-			fmt.Fprintf(virtOS.Stderr(), "%s: %s\n", s.Flags().Program(), err.Error())
+			s.LogProgramError(virtOS, err)
 			return 1
 		}
 		return 0
 	})
+}
+
+// RunEachFileOrStdin runs the callback for every supplied arg, or stdin
+func (s *SimpleCommand) RunEachFileOrStdin(virtOS vos.VOS, files []string, callback func(name string, fd io.Reader) error) int {
+	return s.Run(virtOS, func() int {
+		anyErrored := false
+
+		openCallback := func(name string) error {
+			fd, err := virtOS.Open(name)
+			if err != nil {
+				return err
+			}
+
+			defer fd.Close()
+			return callback(name, fd)
+		}
+
+		for _, arg := range files {
+			if err := openCallback(arg); err != nil {
+				s.LogProgramError(virtOS, err)
+				anyErrored = true
+			}
+
+		}
+
+		if len(files) == 0 {
+			if err := callback("-", virtOS.Stdin()); err != nil {
+				s.LogProgramError(virtOS, err)
+				anyErrored = true
+			}
+		}
+
+		if anyErrored {
+			return 1
+		}
+		return 0
+	})
+}
+
+// Log a program error to stderr in the form "program name: error message"
+func (s *SimpleCommand) LogProgramError(virtOS vos.VOS, err error) {
+	fmt.Fprintf(virtOS.Stderr(), "%s: %s\n", s.Flags().Program(), err.Error())
 }
 
 const (
