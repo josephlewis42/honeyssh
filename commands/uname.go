@@ -60,5 +60,5 @@ func Uname(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Uname
 
 func init() {
-	addBinCmd("uname", Uname)
+	mustAddBinCmd("uname", Uname)
 }

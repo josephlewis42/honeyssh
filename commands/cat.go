@@ -30,5 +30,5 @@ func Cat(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Cat
 
 func init() {
-	addBinCmd("cat", Cat)
+	mustAddBinCmd("cat", Cat)
 }

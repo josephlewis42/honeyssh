@@ -96,6 +96,6 @@ func Apt(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Apt
 
 func init() {
-	addBinCmd("apt", Apt)
-	addBinCmd("apt-get", Apt)
+	mustAddBinCmd("apt", Apt)
+	mustAddBinCmd("apt-get", Apt)
 }

@@ -24,5 +24,5 @@ func Hostname(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Hostname
 
 func init() {
-	addBinCmd("hostname", Hostname)
+	mustAddBinCmd("hostname", Hostname)
 }

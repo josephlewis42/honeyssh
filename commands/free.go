@@ -41,5 +41,5 @@ Swap:      24587768     4301240    20286528`)
 var _ vos.ProcessFunc = Free
 
 func init() {
-	addBinCmd("free", Free)
+	mustAddBinCmd("free", Free)
 }

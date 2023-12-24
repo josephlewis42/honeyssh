@@ -28,5 +28,5 @@ func Which(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Which
 
 func init() {
-	addBinCmd("which", Which)
+	mustAddBinCmd("which", Which)
 }

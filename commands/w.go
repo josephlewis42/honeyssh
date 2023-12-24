@@ -35,6 +35,6 @@ func W(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = W
 
 func init() {
-	addBinCmd("w", W)
-	addBinCmd("who", W)
+	mustAddBinCmd("w", W)
+	mustAddBinCmd("who", W)
 }

@@ -57,5 +57,5 @@ func Rm(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Rm
 
 func init() {
-	addBinCmd("rm", Rm)
+	mustAddBinCmd("rm", Rm)
 }

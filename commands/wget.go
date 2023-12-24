@@ -272,5 +272,5 @@ func (c *countWriter) UpdateOutput() {
 }
 
 func init() {
-	addBinCmd("wget", Wget)
+	mustAddBinCmd("wget", Wget)
 }

@@ -31,5 +31,5 @@ func Last(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Last
 
 func init() {
-	addBinCmd("last", Last)
+	mustAddBinCmd("last", Last)
 }

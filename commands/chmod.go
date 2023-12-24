@@ -139,5 +139,5 @@ func Chmod(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Chmod
 
 func init() {
-	addBinCmd("chmod", Chmod)
+	mustAddBinCmd("chmod", Chmod)
 }

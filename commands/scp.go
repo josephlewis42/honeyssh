@@ -11,7 +11,6 @@ import (
 	"github.com/josephlewis42/honeyssh/core/vos"
 )
 
-//
 func scpUpload(vos vos.VOS, path string) (err error) {
 	// Start upload in VOS
 	uploadFd, err := vos.DownloadPath(fmt.Sprintf("scp_upload://%s", path))
@@ -115,5 +114,5 @@ func Scp(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Scp
 
 func init() {
-	addBinCmd("scp", Scp)
+	mustAddBinCmd("scp", Scp)
 }

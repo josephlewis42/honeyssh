@@ -26,5 +26,5 @@ func Whoami(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Whoami
 
 func init() {
-	addBinCmd("whoami", Whoami)
+	mustAddBinCmd("whoami", Whoami)
 }

@@ -106,5 +106,5 @@ func Ps(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Ps
 
 func init() {
-	addBinCmd("ps", Ps)
+	mustAddBinCmd("ps", Ps)
 }

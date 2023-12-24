@@ -194,6 +194,6 @@ func Ip(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Ifconfig
 
 func init() {
-	addSbinCmd("ifconfig", Ifconfig)
-	addSbinCmd("ip", Ip)
+	mustAddSbinCmd("ifconfig", Ifconfig)
+	mustAddSbinCmd("ip", Ip)
 }

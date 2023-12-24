@@ -43,5 +43,5 @@ func Nice(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Nice
 
 func init() {
-	addBinCmd("nice", Nice)
+	mustAddBinCmd("nice", Nice)
 }

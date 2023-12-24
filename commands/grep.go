@@ -99,6 +99,6 @@ func Grep(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Grep
 
 func init() {
-	addBinCmd("grep", Grep)
-	addBinCmd("egrep", Grep)
+	mustAddBinCmd("grep", Grep)
+	mustAddBinCmd("egrep", Grep)
 }
