@@ -72,5 +72,5 @@ func Passwd(virtualOS vos.VOS) int {
 var _ vos.ProcessFunc = Passwd
 
 func init() {
-	addBinCmd("passwd", Passwd)
+	mustAddBinCmd("passwd", Passwd)
 }

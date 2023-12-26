@@ -125,3 +125,17 @@ func AssertScript(t *testing.T, commands ...string) {
 
 	g.AssertJson(t, t.Name(), steps)
 }
+
+func TestMustDedent(t *testing.T) {
+	got := mustDedent(`
+	abc
+		def
+			ghi
+	jkl
+	`)
+	want := "abc\n\tdef\n\t\tghi\njkl"
+
+	if got != want {
+		t.Fatalf("Wanted %q, got %q", want, got)
+	}
+}

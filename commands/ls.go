@@ -14,9 +14,9 @@ import (
 	"time"
 
 	fcolor "github.com/fatih/color"
-	getopt "github.com/pborman/getopt/v2"
 	"github.com/josephlewis42/honeyssh/core/vos"
 	"github.com/josephlewis42/honeyssh/third_party/memmapfs/mem"
+	getopt "github.com/pborman/getopt/v2"
 )
 
 // Ls implements the UNIX ls command.
@@ -307,5 +307,5 @@ func getUIDGID(fileInfo os.FileInfo) (uid, gid int) {
 var _ vos.ProcessFunc = Ls
 
 func init() {
-	addBinCmd("ls", Ls)
+	mustAddBinCmd("ls", Ls)
 }

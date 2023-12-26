@@ -168,5 +168,5 @@ func Wc(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Wc
 
 func init() {
-	addBinCmd("wc", Wc)
+	mustAddBinCmd("wc", Wc)
 }

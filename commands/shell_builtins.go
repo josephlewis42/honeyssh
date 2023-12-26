@@ -146,4 +146,5 @@ func init() {
 	AllBuiltins["set"] = ShellBuiltinFunc(NopBuiltin)
 	AllBuiltins["su"] = ShellBuiltinFunc(NopBuiltin)
 	AllBuiltins["export"] = ShellBuiltinFunc(NopBuiltin)
+	AllBuiltins["disown"] = ShellBuiltinFunc(NopBuiltin)
 }

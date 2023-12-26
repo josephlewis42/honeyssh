@@ -28,5 +28,5 @@ func Pwd(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Pwd
 
 func init() {
-	addBinCmd("pwd", Pwd)
+	mustAddBinCmd("pwd", Pwd)
 }

@@ -7,6 +7,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/fatih/color"
 	fcolor "github.com/fatih/color"
@@ -28,7 +29,7 @@ type commandTable struct {
 	lookup   map[string]vos.ProcessFunc
 }
 
-func (ct *commandTable) AddCommand(proc vos.ProcessFunc, names ...string) {
+func (ct *commandTable) AddCommand(proc vos.ProcessFunc, names ...string) error {
 	ct.commands = append(ct.commands, CommandEntry{
 		Names: names,
 		Proc:  proc,
@@ -37,8 +38,12 @@ func (ct *commandTable) AddCommand(proc vos.ProcessFunc, names ...string) {
 		ct.lookup = make(map[string]vos.ProcessFunc)
 	}
 	for _, name := range names {
+		if _, ok := ct.lookup[name]; ok {
+			return fmt.Errorf("name already registered: %q", name)
+		}
 		ct.lookup[name] = proc
 	}
+	return nil
 }
 
 var allCommands = commandTable{}
@@ -56,13 +61,27 @@ func ListBuiltinCommands() []CommandEntry {
 var _ vos.ProcessResolver = BuiltinProcessResolver
 
 // addBinCmd adds a command under /bin and /usr/bin.
-func addBinCmd(name string, cmd vos.ProcessFunc) {
-	allCommands.AddCommand(cmd, path.Join("/bin", name), path.Join("/usr/bin", name))
+func addBinCmd(name string, cmd vos.ProcessFunc) error {
+	return allCommands.AddCommand(cmd, path.Join("/bin", name), path.Join("/usr/bin", name))
 }
 
 // addSbinCmd adds a command under /sbin and /usr/sbin.
-func addSbinCmd(name string, cmd vos.ProcessFunc) {
-	allCommands.AddCommand(cmd, path.Join("/sbin", name), path.Join("/usr/sbin", name))
+func addSbinCmd(name string, cmd vos.ProcessFunc) error {
+	return allCommands.AddCommand(cmd, path.Join("/sbin", name), path.Join("/usr/sbin", name))
+}
+
+// mustAddBinCmd adds a command under /bin and /usr/bin and panics if it already exists.
+func mustAddBinCmd(name string, cmd vos.ProcessFunc) {
+	if err := addBinCmd(name, cmd); err != nil {
+		panic(err)
+	}
+}
+
+// mustAddSbinCmd adds a command under /sbin and /usr/sbin and panics if it already exists.
+func mustAddSbinCmd(name string, cmd vos.ProcessFunc) {
+	if err := addSbinCmd(name, cmd); err != nil {
+		panic(err)
+	}
 }
 
 func BytesToHuman(bytes int64) string {
@@ -317,4 +336,37 @@ func (c *ColorPrinter) Sprintf(color *color.Color, format string, a ...interface
 		return color.Sprintf(format, a...)
 	}
 	return fmt.Sprintf(format, a...)
+}
+
+// mustDedent takes a multline string and dedents it based on the
+// indentation of the second line. The first line MUST be blank.
+func mustDedent(s string) string {
+	s = strings.TrimRightFunc(s, unicode.IsSpace)
+	lines := strings.Split(s, "\n")
+	if lines[0] != "" {
+		panic("First line must be blank.")
+	}
+
+	if len(lines) == 1 {
+		return ""
+	}
+
+	firstLine := lines[1]
+	remainderLen := len(strings.TrimLeftFunc(firstLine, unicode.IsSpace))
+	prefix := firstLine[:len(firstLine)-remainderLen]
+
+	out := ""
+	for i, line := range lines[1:] {
+		if i != 0 {
+			out += "\n"
+		}
+		trimmed := strings.TrimPrefix(line, prefix)
+		if trimmed == line {
+			panic(fmt.Sprintf("Line %q doesn't have prefix %q", line, prefix))
+		}
+
+		out += trimmed
+	}
+
+	return out
 }

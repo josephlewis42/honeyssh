@@ -27,5 +27,5 @@ func Id(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Id
 
 func init() {
-	addBinCmd("id", Id)
+	mustAddBinCmd("id", Id)
 }

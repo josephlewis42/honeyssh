@@ -102,5 +102,5 @@ func Tar(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Tar
 
 func init() {
-	addBinCmd("tar", Tar)
+	mustAddBinCmd("tar", Tar)
 }

@@ -456,5 +456,5 @@ func (s *Shell) executeProgramOrBuiltin(ec execContext) {
 }
 
 func init() {
-	addBinCmd("sh", RunShell)
+	mustAddBinCmd("sh", RunShell)
 }

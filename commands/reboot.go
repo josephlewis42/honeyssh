@@ -25,5 +25,5 @@ func Reboot(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Reboot
 
 func init() {
-	addSbinCmd("reboot", Reboot)
+	mustAddSbinCmd("reboot", Reboot)
 }

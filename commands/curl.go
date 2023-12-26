@@ -127,5 +127,5 @@ func Curl(virtOS vos.VOS) int {
 }
 
 func init() {
-	addBinCmd("curl", Curl)
+	mustAddBinCmd("curl", Curl)
 }

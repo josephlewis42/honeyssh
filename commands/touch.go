@@ -57,5 +57,5 @@ func Touch(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Touch
 
 func init() {
-	addBinCmd("touch", Touch)
+	mustAddBinCmd("touch", Touch)
 }

@@ -41,5 +41,5 @@ func formatUptime(virtOS uptimeable) string {
 var _ vos.ProcessFunc = Uptime
 
 func init() {
-	addBinCmd("uptime", Uptime)
+	mustAddBinCmd("uptime", Uptime)
 }

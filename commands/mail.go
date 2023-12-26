@@ -27,5 +27,5 @@ func Mail(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Mail
 
 func init() {
-	addBinCmd("mail", Mail)
+	mustAddBinCmd("mail", Mail)
 }

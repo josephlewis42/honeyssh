@@ -30,5 +30,5 @@ func Env(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Env
 
 func init() {
-	addBinCmd("env", Env)
+	mustAddBinCmd("env", Env)
 }

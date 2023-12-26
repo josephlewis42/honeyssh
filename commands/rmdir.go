@@ -90,5 +90,5 @@ func Rmdir(virtOS vos.VOS) int {
 var _ vos.ProcessFunc = Rmdir
 
 func init() {
-	addBinCmd("rmdir", Rmdir)
+	mustAddBinCmd("rmdir", Rmdir)
 }
