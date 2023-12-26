@@ -7,12 +7,21 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/josephlewis42/honeyssh/core/vos"
 	"github.com/juju/ratelimit"
 )
+
+func remoteFilename(url *url.URL) (string, error) {
+	_, file := path.Split(url.Path)
+	if file == "" {
+		return "", errors.New("Remote file name has no length")
+	}
+	return file, nil
+}
 
 // Curl implements a curl command.
 func Curl(virtOS vos.VOS) int {
@@ -26,7 +35,12 @@ func Curl(virtOS vos.VOS) int {
 	quietPtr := cmd.Flags().BoolLong("silent", 's', "Silent mode")
 	// Go's HTTP client follows redirects by default.
 	_ = cmd.Flags().BoolLong("location", 'L', "Follow redirects")
+	_ = cmd.Flags().IntLong("max-redirs", 0, -1, "Set the maximum number of redirects to follow")
+
 	outputPtr := cmd.Flags().StringLong("output", 'o', "", "Write to location rather than stdout")
+	additionalHeaders := cmd.Flags().ListLong("header", 'H', "Append additional headers to the requrest")
+	method := cmd.Flags().StringLong("request", 'X', http.MethodGet, "Specifies the request method to use (default: GET)")
+	useRemoteName := cmd.Flags().BoolLong("remote-name", 'O', "Write output to a local file named like the remote file we get.")
 
 	lastArgLookedLikeFlag := false
 	return cmd.RunEachArg(virtOS, func(rawURL string) error {
@@ -58,6 +72,20 @@ func Curl(virtOS vos.VOS) int {
 		var destFd io.Writer
 		var logFd io.Writer
 		switch {
+		case *useRemoteName:
+			destName, err = remoteFilename(parsedURL)
+			if err != nil {
+				return err
+			}
+
+			osFd, err := virtOS.Create(destName)
+			if err != nil {
+				return errors.New("couldn't create output file")
+			}
+			defer osFd.Close()
+			destFd = osFd
+			logFd = virtOS.Stdout()
+
 		case *outputPtr == "-" || *outputPtr == "":
 			destName = "stdout"
 			destFd = virtOS.Stdout()
@@ -88,11 +116,25 @@ func Curl(virtOS vos.VOS) int {
 		}
 		defer downloadFd.Close()
 
-		request, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedURL.String(), nil)
+		request, err := http.NewRequestWithContext(ctx, *method, parsedURL.String(), nil)
 		if err != nil {
 			return err
 		}
 		request.Header.Set("User-Agent", "curl/7.72.0")
+
+		// Add additional headers specified on the command line.
+		for _, header := range *additionalHeaders {
+			headerParts := strings.SplitN(header, ": ", 2)
+			switch len(headerParts) {
+			case 2:
+				key, value := headerParts[0], headerParts[1]
+				request.Header[key] = append(request.Header[key], value)
+
+			default:
+				key, value := headerParts[0], ""
+				request.Header[key] = append(request.Header[key], value)
+			}
+		}
 
 		response, err := wgetHTTPClient.Do(request)
 		if err != nil {
