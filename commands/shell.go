@@ -147,21 +147,20 @@ func (s *Shell) prompt() string {
 	return unescape(prompt)
 }
 
-func (s *Shell) logSyntaxError(node syntax.Node) error {
-	buf := &bytes.Buffer{}
-	syntax.DebugPrint(buf, node)
-	s.VirtualOS.LogInvalidInvocation(fmt.Errorf("sh syntax error: %s", buf.String()))
+func (s *Shell) logSyntaxError(ec execContext, node syntax.Node) error {
+	s.VirtualOS.LogInvalidInvocation(fmt.Errorf("sh syntax error node type: %T near: %s in %q", node, node.Pos().String(), ec.rawStatement))
 
 	return fmt.Errorf("syntax error near: %d", node.Pos().Col())
 }
 
-func (s *Shell) executeFile(file *syntax.File) error {
+func (s *Shell) executeFile(file *syntax.File, rawStmt string) error {
 	for _, stmt := range file.Stmts {
 		ec := execContext{
-			stdin:  s.VirtualOS.Stdin(),
-			stdout: s.VirtualOS.Stdout(),
-			stderr: s.VirtualOS.Stderr(),
-			env:    s.cmdEnv().Environ(),
+			stdin:        s.VirtualOS.Stdin(),
+			stdout:       s.VirtualOS.Stdout(),
+			stderr:       s.VirtualOS.Stderr(),
+			env:          s.cmdEnv().Environ(),
+			rawStatement: rawStmt,
 		}
 		if err := s.executeStatement(ec, stmt); err != nil {
 			return err
@@ -185,13 +184,16 @@ type execContext struct {
 
 	// args contains the CLI arguments for the command
 	args []string
+
+	// Raw statement used for error logging.
+	rawStatement string
 }
 
 func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 	for _, redirect := range stmt.Redirs {
 		// Only support output indirection (>)
 		if redirect.Op != syntax.RdrOut && redirect.Op != syntax.DplOut {
-			return s.logSyntaxError(redirect)
+			return s.logSyntaxError(ec, redirect)
 		}
 
 		from := ""
@@ -206,11 +208,11 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 		case "2": // stderr
 			fromWriter = &ec.stderr
 		default:
-			return s.logSyntaxError(redirect)
+			return s.logSyntaxError(ec, redirect)
 		}
 
 		if redirect.Word == nil {
-			return s.logSyntaxError(redirect)
+			return s.logSyntaxError(ec, redirect)
 		}
 		to, err := s.evalWord(ec, redirect.Word)
 		if err != nil {
@@ -218,7 +220,7 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 		}
 		switch {
 		case to == "":
-			return s.logSyntaxError(redirect)
+			return s.logSyntaxError(ec, redirect)
 		case redirect.Op == syntax.DplOut && to == "1":
 			*fromWriter = ec.stdout
 		case redirect.Op == syntax.DplOut && to == "2":
@@ -281,11 +283,11 @@ func (s *Shell) executeStatement(ec execContext, stmt *syntax.Stmt) error {
 			}
 		default:
 			// Fail for unknown operations.
-			return s.logSyntaxError(stmt)
+			return s.logSyntaxError(ec, stmt)
 		}
 	default:
 		// Fail for other types of statements
-		return s.logSyntaxError(stmt)
+		return s.logSyntaxError(ec, stmt)
 	}
 
 	return nil
@@ -309,11 +311,11 @@ func (s *Shell) evalAssign(ec execContext, assignments []*syntax.Assign) ([]stri
 				case *syntax.ParamExp:
 					param := part.Param
 					if param == nil {
-						return nil, s.logSyntaxError(word)
+						return nil, s.logSyntaxError(ec, word)
 					}
 					value += tmpEnv.Getenv(param.Value)
 				default:
-					return nil, s.logSyntaxError(word)
+					return nil, s.logSyntaxError(ec, word)
 				}
 			}
 		}
@@ -363,13 +365,13 @@ func (s *Shell) evalWordPart(ec execContext, part syntax.WordPart) (string, erro
 	case *syntax.ParamExp:
 		param := part.Param
 		if param == nil {
-			return "", s.logSyntaxError(part)
+			return "", s.logSyntaxError(ec, part)
 		}
 		tmpEnv := vos.NewMapEnvFromEnvList(ec.env)
 		return tmpEnv.Getenv(param.Value), nil
 
 	default:
-		return "", s.logSyntaxError(part)
+		return "", s.logSyntaxError(ec, part)
 	}
 }
 
@@ -409,7 +411,7 @@ func (s *Shell) runCommand(line string) {
 		fmt.Fprintf(s.Readline, "sh: syntax error: %v\n", err)
 		return
 	}
-	if err := s.executeFile(prog); err != nil {
+	if err := s.executeFile(prog, line); err != nil {
 		fmt.Fprintf(s.Readline, "sh: %v\n", err)
 	}
 }
