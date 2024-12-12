@@ -1,6 +1,6 @@
 module github.com/josephlewis42/honeyssh
 
-go 1.17
+go 1.23
 
 require (
 	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db
