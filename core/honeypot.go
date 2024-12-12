@@ -147,7 +147,21 @@ func (h *Honeypot) Close() error {
 	return h.toClose.Close()
 }
 
-func (h *Honeypot) HandleConnection(s ssh.Session) error {
+// Minimal properties from ssh.Session needed for the honeypot.
+type SessionInfo interface {
+	Context() context.Context
+	Environ() []string
+	RawCommand() string
+	Subsystem() string
+	Command() []string
+	Pty() (ssh.Pty, <-chan ssh.Window, bool)
+	vos.SSHSession
+	io.ReadCloser
+}
+
+var _ SessionInfo = (ssh.Session)(nil)
+
+func (h *Honeypot) HandleConnection(s SessionInfo) error {
 	sessionStartTime := time.Now()
 	sessionID := fmt.Sprintf("%d", sessionStartTime.UnixNano())
 	sessionLogger := h.logger.NewSession(sessionID)
@@ -180,7 +194,7 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 		},
 	})
 
-	// Set up I/O and loging.
+	// Set up I/O and logging.
 	logFileName := fmt.Sprintf("%s.%s", time.Now().Format(time.RFC3339Nano), ttylog.AsciicastFileExt)
 	sessionLogger.Record(&logger.LogEntry_OpenTtyLog{
 		OpenTtyLog: &logger.OpenTTYLog{

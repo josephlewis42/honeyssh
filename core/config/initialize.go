@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-// Initialize creates the honeypot configuartion in the given directory.
+// Initialize creates the honeypot configuration in the given directory.
 func Initialize(path string, logger *log.Logger) (*Configuration, error) {
 	// Make sure path exists
 	full, err := filepath.Abs(path)
