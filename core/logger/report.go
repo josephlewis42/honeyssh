@@ -77,6 +77,10 @@ type InteractiveSession struct {
 	TerminalName string `json:"terminal_name"`
 	IsPty        bool   `json:"is_pty"`
 
+	DurationMs         int64 `json:"duration_ms,omitempty"`
+	HumanKeypressCount int64 `json:"human_keypress_count,omitempty"`
+	StdinByteCount     int64 `json:"stdin_byte_count,omitempty"`
+
 	Commands  []string `json:"commands"`
 	Downloads []string `json:"downloads"`
 }
@@ -101,6 +105,10 @@ func (i *InteractiveSession) Update(le *LogEntry) {
 		i.IsPty = event.TerminalUpdate.GetIsPty()
 	case *LogEntry_OpenTtyLog:
 		i.TTYLog = event.OpenTtyLog.GetName()
+	case *LogEntry_SessionEnded:
+		i.DurationMs = event.SessionEnded.DurationMs
+		i.HumanKeypressCount = event.SessionEnded.HumanKeypressCount
+		i.StdinByteCount = event.SessionEnded.StdinByteCount
 	}
 }
 

@@ -28,6 +28,7 @@ message LogEntry {
     Download download = 25;
     Panic panic = 26;
     HoneypotEvent honeypot_event = 27;
+    SessionEnded session_ended = 28;
   };
 }
 
@@ -162,4 +163,16 @@ message HoneypotEvent {
 
   // Context about what was going on before the panic.
   Type event_type = 1;
+}
+
+// Summary reported at the end of a session.
+message SessionEnded {
+  // Session duration in milliseconds.
+  int64 duration_ms = 1;
+
+  // Number of characters that looked "human" passed through stdin.
+  int64 human_keypress_count = 2;
+
+  // Number of bytes written through stdin.
+  int64 stdin_byte_count = 3;
 }

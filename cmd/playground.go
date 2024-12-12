@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -72,7 +71,7 @@ var playgroundCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		dir, err := ioutil.TempDir("", "playground")
+		dir, err := os.MkdirTemp("", "playground")
 		if err != nil {
 			return err
 		}

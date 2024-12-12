@@ -148,7 +148,8 @@ func (h *Honeypot) Close() error {
 }
 
 func (h *Honeypot) HandleConnection(s ssh.Session) error {
-	sessionID := fmt.Sprintf("%d", time.Now().UnixNano())
+	sessionStartTime := time.Now()
+	sessionID := fmt.Sprintf("%d", sessionStartTime.UnixNano())
 	sessionLogger := h.logger.NewSession(sessionID)
 
 	// Log panics to prevent a single connection from bringing down the whole
@@ -194,7 +195,21 @@ func (h *Honeypot) HandleConnection(s ssh.Session) error {
 	defer logFd.Close()
 
 	// Start logging the terminal interactions
-	vio := ttylog.NewRecorder(vos.NewVIOAdapter(s, s, s), ttylog.NewAsciicastLogSink(logFd))
+	readCounter := vos.NewCounter(s, func(b byte) bool {
+		return b == 127 || // Delete
+			b == 8 // Backspace
+	})
+	vio := ttylog.NewRecorder(vos.NewVIOAdapter(readCounter, s, s), ttylog.NewAsciicastLogSink(logFd))
+
+	defer func() {
+		sessionLogger.Record(&logger.LogEntry_SessionEnded{
+			SessionEnded: &logger.SessionEnded{
+				DurationMs:         time.Since(sessionStartTime).Milliseconds(),
+				HumanKeypressCount: int64(readCounter.MatchedTotal),
+				StdinByteCount:     int64(readCounter.Total),
+			},
+		})
+	}()
 
 	procName := h.configuration.OS.DefaultShell
 	procArgs := []string{procName}
