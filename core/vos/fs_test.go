@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/josephlewis42/honeyssh/third_party/memmapfs"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/josephlewis42/honeyssh/third_party/memmapfs"
 )
 
 func FSTestCase(t *testing.T, suite FSTestSuite, testPath string) *FSTestCaseSetup {

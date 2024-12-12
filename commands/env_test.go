@@ -3,8 +3,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/josephlewis42/honeyssh/core/vos/vostest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEnv(t *testing.T) {

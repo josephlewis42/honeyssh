@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/josephlewis42/honeyssh/core"
+	"github.com/spf13/cobra"
 )
 
 // serveCmd represents the serve command

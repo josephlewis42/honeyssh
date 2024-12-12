@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/josephlewis42/honeyssh/commands"
+	"github.com/spf13/cobra"
 )
 
 // serveCmd represents the serve command
