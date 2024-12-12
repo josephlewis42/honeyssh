@@ -3,8 +3,8 @@ package cmd
 import (
 	"log"
 
-	"github.com/spf13/cobra"
 	"github.com/josephlewis42/honeyssh/core/config"
+	"github.com/spf13/cobra"
 )
 
 // initCmd intializes the honeypot configuration

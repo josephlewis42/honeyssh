@@ -85,3 +85,44 @@ func (*devNull) Close() error {
 func (*devNull) Write(b []byte) (int, error) {
 	return len(b), nil
 }
+
+// Counter counts the number of matching and total bytes through a reader.
+type Counter struct {
+	test    func(byte) bool
+	wrapped io.ReadCloser
+
+	// Total number of bytes read.
+	Total int
+	// Total number of matched bytes.
+	MatchedTotal int
+}
+
+// NewCounter creates a new counter over the wrapped stream applying test to
+// each byte to update the TestTotal property.
+func NewCounter(wrapped io.ReadCloser, test func(byte) bool) *Counter {
+	return &Counter{
+		test:    test,
+		wrapped: wrapped,
+	}
+}
+
+var _ io.ReadCloser = (*Counter)(nil)
+
+// Read implements io.Reader.
+func (c *Counter) Read(data []byte) (int, error) {
+	cnt, err := c.wrapped.Read(data)
+	c.Total += cnt
+
+	for i := 0; i < cnt; i++ {
+		if c.test(data[i]) {
+			c.MatchedTotal++
+		}
+	}
+
+	return cnt, err
+}
+
+// Close implemnts io.Closer.
+func (c *Counter) Close() error {
+	return c.wrapped.Close()
+}

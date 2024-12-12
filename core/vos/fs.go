@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/josephlewis42/honeyssh/core/config"
 	"github.com/josephlewis42/honeyssh/third_party/cowfs"
 	"github.com/josephlewis42/honeyssh/third_party/memmapfs"
 	"github.com/josephlewis42/honeyssh/third_party/realpath"
+	"github.com/spf13/afero"
 )
 
 func NewVFSFromConfig(configuration *config.Configuration) (VFS, error) {

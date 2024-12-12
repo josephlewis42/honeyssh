@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"log"
 
-	"github.com/spf13/cobra"
 	"github.com/josephlewis42/honeyssh/core/config"
+	"github.com/spf13/cobra"
 )
 
 var cfgPath string

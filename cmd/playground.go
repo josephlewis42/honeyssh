@@ -1,27 +1,36 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/josephlewis42/honeyssh/commands"
+	"github.com/anmitsu/go-shlex"
+	"github.com/gliderlabs/ssh"
+	"github.com/josephlewis42/honeyssh/core"
 	"github.com/josephlewis42/honeyssh/core/config"
-	"github.com/josephlewis42/honeyssh/core/logger"
 	"github.com/josephlewis42/honeyssh/core/vos"
 	"github.com/spf13/cobra"
 )
 
 type playgroundSession struct {
-	user string
-	out  io.Writer
+	user       string
+	out        io.Writer
+	in         io.Reader
+	rawCommand string
+	subsystem  string
+	environ    []string
+	pty        ssh.Pty
+
+	exitCalled bool
+	exitCode   int
 }
+
+var _ core.SessionInfo = (*playgroundSession)(nil)
 
 func (p *playgroundSession) User() string {
 	return p.user
@@ -32,12 +41,48 @@ func (p *playgroundSession) RemoteAddr() net.Addr {
 }
 
 func (p *playgroundSession) Exit(code int) error {
-	os.Exit(code)
+	p.exitCalled = true
+	p.exitCode = code
 	return nil
 }
 
 func (p *playgroundSession) Write(b []byte) (int, error) {
 	return p.out.Write(b)
+}
+
+func (p *playgroundSession) Command() []string {
+	// Ignore the error, it doesn't matter for the playground.
+	cmd, _ := shlex.Split(p.rawCommand, true)
+	return cmd
+}
+
+func (p *playgroundSession) RawCommand() string {
+	return p.rawCommand
+}
+func (p *playgroundSession) Subsystem() string {
+	return p.subsystem
+}
+
+func (p *playgroundSession) Context() context.Context {
+	return context.Background()
+}
+
+func (p *playgroundSession) Environ() []string {
+	return p.environ
+}
+
+func (p *playgroundSession) Pty() (ssh.Pty, <-chan ssh.Window, bool) {
+	output := make(<-chan ssh.Window)
+	return p.pty, output, true
+}
+
+func (p *playgroundSession) Read(b []byte) (int, error) {
+	return p.in.Read(b)
+}
+
+func (p *playgroundSession) Close() error {
+	// Close does nothing in playground
+	return nil
 }
 
 type SSHSession interface {
@@ -72,7 +117,7 @@ var playgroundCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		dir, err := ioutil.TempDir("", "playground")
+		dir, err := os.MkdirTemp("", "playground")
 		if err != nil {
 			return err
 		}
@@ -88,48 +133,42 @@ var playgroundCmd = &cobra.Command{
 		// a real one -- it's surprisingly convincing.
 		cfg.Uname.Nodename = "playground🍯"
 
-		fs, err := vos.NewVFSFromConfig(cfg)
-		if err != nil {
-			return err
-		}
-
-		logFd, err := cfg.OpenAppLog()
-		if err != nil {
-			return err
-		}
-		defer logFd.Close()
-		logRecorder := logger.NewJsonLinesLogRecorder(logFd)
-
 		playgroundLogger.Printf("Logging to: file://%s\n", dir)
-		playgroundLogger.Printf("See logs with: tail -f %s\n", filepath.Join(dir, logFd.Name()))
+		playgroundLogger.Printf("See logs with: tail -f %s\n", filepath.Join(dir, config.AppLogName))
 		playgroundLogger.Println(strings.Repeat("=", 80))
 
-		sharedOS := vos.NewSharedOS(fs, commands.BuiltinProcessResolver, cfg, time.Now)
-		tenantOS := vos.NewTenantOS(sharedOS, logRecorder.NewSession("playground"), &playgroundSession{
-			out:  cmd.OutOrStdout(),
-			user: "root",
-		})
-		// TODO: Connect to the real PTY
-		tenantOS.SetPTY(vos.PTY{
-			Width:  80,
-			Height: 40,
-			Term:   "playground",
-			IsPTY:  true,
-		})
-
-		initProc := tenantOS.LoginProc()
-
-		runner, err := initProc.StartProcess("/bin/sh", []string{}, &vos.ProcAttr{
-			Dir:   "/",
-			Env:   initProc.Environ(),
-			Files: &osVIO{},
-		})
+		honeypot, err := core.NewHoneypot(cfg, io.Discard)
 		if err != nil {
 			return err
 		}
 
-		exitCode := runner.Run()
-		fmt.Fprintf(cmd.OutOrStdout(), "Exit code: %d\n", exitCode)
+		session := &playgroundSession{
+			out:        cmd.OutOrStdout(),
+			in:         cmd.InOrStdin(),
+			user:       "root",
+			rawCommand: "/bin/sh",
+			subsystem:  "",
+			environ:    []string{},
+			pty: ssh.Pty{
+				Term: "playground",
+				Window: ssh.Window{
+					Width:  80,
+					Height: 40,
+				},
+			},
+		}
+
+		if err := honeypot.HandleConnection(session); err != nil {
+			return err
+		}
+
+		playgroundLogger.Println(strings.Repeat("=", 80))
+		if session.exitCalled {
+			playgroundLogger.Printf("Session ended, exit code: %d\n", session.exitCode)
+		} else {
+			playgroundLogger.Println("Session ended, exit not called")
+		}
+
 		return nil
 	},
 }

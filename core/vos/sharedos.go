@@ -4,8 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/josephlewis42/honeyssh/core/config"
+	"github.com/spf13/afero"
 )
 
 // ProcessFunc is a "process" that can be run.
