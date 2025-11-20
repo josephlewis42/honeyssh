@@ -48,7 +48,7 @@ func Uname(virtOS vos.VOS) int {
 		}
 
 		if !anyPrinted {
-			fmt.Fprintf(w, uname.Sysname)
+			fmt.Fprintf(w, "%s", uname.Sysname)
 		}
 
 		fmt.Fprintln(w)

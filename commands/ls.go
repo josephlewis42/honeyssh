@@ -147,7 +147,7 @@ func Ls(virtOS vos.VOS) int {
 					gid2name(gid),
 					sizeFmt(f.Size()),
 					modTime,
-					color.Sprintf(Dircolor(f), f.Name()))
+					color.Sprintf(Dircolor(f), "%s", f.Name()))
 			}
 			tw.Flush()
 		} else {
@@ -171,11 +171,11 @@ func Ls(virtOS vos.VOS) int {
 						entry := paths[index]
 						name := entry.Name()
 						width -= len(name) // Subtract off padding.
-						fmt.Fprintf(tw, color.Sprintf(Dircolor(entry), name))
+						fmt.Fprintf(tw, "%s", color.Sprintf(Dircolor(entry), "%s", name))
 					}
 					// Add padding for alignment.
 					if width > 0 {
-						fmt.Fprintf(tw, strings.Repeat(" ", width))
+						fmt.Fprintf(tw, "%s", strings.Repeat(" ", width))
 					}
 				}
 				fmt.Fprintln(tw)
