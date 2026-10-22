@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package snappy
+package snapref
 
 import (
 	"encoding/binary"
@@ -20,8 +20,10 @@ import (
 func Encode(dst, src []byte) []byte {
 	if n := MaxEncodedLen(len(src)); n < 0 {
 		panic(ErrTooLarge)
-	} else if len(dst) < n {
+	} else if cap(dst) < n {
 		dst = make([]byte, n)
+	} else {
+		dst = dst[:n]
 	}
 
 	// The block starts with the varint-encoded length of the decompressed bytes.
